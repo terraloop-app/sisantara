@@ -1,9 +1,14 @@
-const CACHE_NAME = 'sisantara';
+const CACHE_NAME = 'TerraLoop';
 const urlsToCache = [
   '/',
   '/index.html',
   '/style.css',
-  '/script.js'
+  '/script.js',
+  '/manifest.json',
+  '/icons/logo-192x192.png',
+  '/icons/logo-512x512.png',
+  '/icons/logo-192x192-maskable.png',
+  '/icons/logo-512x512-maskable.png'
 ];
 
 // Install Service Worker
