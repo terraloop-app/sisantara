@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://myterraloop.netlify.app/
+Sitemap: https://sisantara.my.id
