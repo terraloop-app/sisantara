@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://sisantara.my.id
+Sitemap: https://sisantara.my.id/sitemap.xml
