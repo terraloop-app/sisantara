@@ -1,4 +1,4 @@
-const CACHE_NAME = 'TerraLoop';
+const CACHE_NAME = 'sisantara';
 const urlsToCache = [
   '/',
   '/index.html',
