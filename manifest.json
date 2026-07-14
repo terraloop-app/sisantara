@@ -1,7 +1,7 @@
 {
-  "name": "TerraLoop",
-  "short_name": "TerraLoop",
-  "description": "TerraLoop",
+  "name": "Sisantara",
+  "short_name": "Sisantara",
+  "description": "Sisantara",
   "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
@@ -10,25 +10,25 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icons/logo-192x192.png",
+      "src": "Asset/ikon/logo-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/logo-512x512.png",
+      "src": "Asset/ikon/logo-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/logo-192x192-maskable.png",
+      "src": "Asset/ikon/logo-192x192-maskable.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icons/logo-512x512-maskable.png",
+      "src": "Asset/ikon/logo-512x512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
