@@ -264,7 +264,7 @@
         // ============================================================
         // APPS SCRIPT URL
         // ============================================================
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzrdFowsn3BL07YlsCV0_pwbz6H00C1cNHqxnKiNJaLj_HMVzQo3FtxI4fD9VLIWWwQ/exec";
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztRzZU7zmAE-KcNUZMOcs1a1plk3ZPIa-HStcjrR8ayVEdC9l7uDKH-JQvKZKFzwoR/exec";
 
         // ============================================================
         // TOAST NOTIFICATION
@@ -496,6 +496,39 @@ function getLevelBadgeSVG(levelName) {
                 return { success: false, error: err.toString() };
             }
         }
+
+// Fungsi khusus login: BEDA dari sendToSheet biasa, karena kita
+        // BUTUH baca response asli dari server (bukan cuma "kirim & lupa").
+        async function checkLoginServer(nama, password) {
+            const url = APPS_SCRIPT_URL + '?type=check_login&nama=' + encodeURIComponent(nama) +
+                        '&password=' + encodeURIComponent(password) + '&t=' + Date.now();
+            const controller = new AbortController();
+            const tid = setTimeout(() => controller.abort(), 15000);
+            try {
+                const res = await fetch(url, { signal: controller.signal });
+                clearTimeout(tid);
+                return await res.json();
+            } catch (err) {
+                clearTimeout(tid);
+                return { success: false, error: 'network', detail: err.toString() };
+            }
+        }
+
+        async function checkResetServer(nama, telepon) {
+            const url = APPS_SCRIPT_URL + '?type=check_reset&nama=' + encodeURIComponent(nama) +
+                        '&telepon=' + encodeURIComponent(telepon) + '&t=' + Date.now();
+            try {
+                const res = await fetch(url);
+                return await res.json();
+            } catch (err) {
+                return { success: false, error: 'network' };
+            }
+        }
+
+        async function resetPasswordServer(nama, telepon, passwordBaru) {
+            return await sendToSheet({ type: 'reset_password', nama, telepon, passwordBaru });
+        }
+
 
         async function sendOrder(order) {
             const login = JSON.parse(localStorage.getItem('sisaPlusLogin') || '{}');
@@ -3370,6 +3403,7 @@ function handleDaftarStep2() {
             sendToSheet({
                 type: 'customer',
                 nama: loginData.nama,
+                password: loginData.password,   // <-- BARU: password ikut dikirim ke server
                 namaToko: loginData.toko,
                 telepon: loginData.telepon,
                 alamat: loginData.alamat,
@@ -3390,7 +3424,8 @@ const ADMIN_ACCOUNTS = [
     { nama: 'ridho', password: 'admin' },
     { nama: 'boy',   password: 'admin' }
 ];
-function handleMasuk() {
+
+async function handleMasuk() {
     const nama = document.getElementById('masukNama').value.trim();
     const password = document.getElementById('masukPassword').value.trim();
 
@@ -3418,24 +3453,57 @@ function handleMasuk() {
         return;
     }
 
-    // Kalau bukan admin, cek akun customer biasa
-    const existing = JSON.parse(localStorage.getItem('sisaPlusCustomers') || '[]');
-    const found = existing.find(c =>
-        c.nama.toLowerCase() === nama.toLowerCase() && c.password === password
-    );
+    // Kalau bukan admin -> validasi ke SERVER (sumber kebenaran utama,
+    // supaya akun yang didaftarkan di device lain tetap bisa login di sini).
+    const btn = document.getElementById('btnMasuk'); // sesuaikan ID tombol Masuk kamu kalau beda
+    if (btn) { btn.disabled = true; btn.dataset.origText = btn.textContent; btn.textContent = 'Memeriksa...'; }
 
-    if (!found) {
-        alert('Nama atau kata sandi salah, atau Anda belum pernah daftar di perangkat ini.');
+    const result = await checkLoginServer(nama, password);
+
+    if (btn) { btn.disabled = false; btn.textContent = btn.dataset.origText || 'Masuk'; }
+
+    if (result && result.success && result.customer) {
+        const found = {
+            nama: result.customer.Nama || nama,
+            toko: result.customer.NamaToko || 'Rumah Tangga',
+            telepon: result.customer.Telepon || '',
+            alamat: result.customer.Alamat || '',
+            isAdmin: false
+        };
+        localStorage.setItem('sisaPlusLogin', JSON.stringify(found));
+        // simpan juga ke cache lokal biar bisa dipakai kalau nanti offline
+        const existing = JSON.parse(localStorage.getItem('sisaPlusCustomers') || '[]');
+        const idx = existing.findIndex(c => c.nama.toLowerCase() === nama.toLowerCase());
+        const cacheEntry = { ...found, password };
+        if (idx > -1) existing[idx] = cacheEntry; else existing.push(cacheEntry);
+        localStorage.setItem('sisaPlusCustomers', JSON.stringify(existing));
+
+        executeLogin(found);
         return;
     }
 
-    localStorage.setItem('sisaPlusLogin', JSON.stringify(found));
-    executeLogin(found);
+    if (result && result.error === 'network') {
+        // Server tidak terjangkau -> coba fallback localStorage (mode offline)
+        const existing = JSON.parse(localStorage.getItem('sisaPlusCustomers') || '[]');
+        const found = existing.find(c =>
+            c.nama.toLowerCase() === nama.toLowerCase() && c.password === password
+        );
+        if (found) {
+            alert('Koneksi bermasalah, masuk pakai data tersimpan di perangkat ini.');
+            localStorage.setItem('sisaPlusLogin', JSON.stringify(found));
+            executeLogin(found);
+            return;
+        }
+        alert('Tidak bisa terhubung ke server dan tidak ada data tersimpan di perangkat ini. Coba lagi.');
+        return;
+    }
+
+    alert('Nama atau kata sandi salah.');
 }
 // Simpan sementara akun yang lolos verifikasi lupa password
 let tempResetAccount = null;
 
-function handleCekLupaPassword() {
+async function handleCekLupaPassword() {
     const nama = document.getElementById('lupaNama').value.trim();
     const telepon = document.getElementById('lupaTelepon').value.trim();
 
@@ -3444,21 +3512,18 @@ function handleCekLupaPassword() {
         return;
     }
 
-    const existing = JSON.parse(localStorage.getItem('sisaPlusCustomers') || '[]');
-    const found = existing.find(c =>
-        c.nama.toLowerCase() === nama.toLowerCase() && c.telepon === telepon
-    );
+    const result = await checkResetServer(nama, telepon);
 
-    if (!found) {
-        alert('Nama dan nomor HP tidak cocok dengan data yang terdaftar di perangkat ini.');
+    if (!result || !result.success) {
+        alert('Nama dan nomor HP tidak cocok dengan data yang terdaftar.');
         return;
     }
 
-    tempResetAccount = found;
+    tempResetAccount = { nama, telepon };
     switchAuthMode('resetPassword');
 }
 
-function handleSimpanPasswordBaru() {
+async function handleSimpanPasswordBaru() {
     const passwordBaru = document.getElementById('resetPasswordBaru').value;
 
     if (!passwordBaru) {
@@ -3471,20 +3536,20 @@ function handleSimpanPasswordBaru() {
         return;
     }
 
-    const existing = JSON.parse(localStorage.getItem('sisaPlusCustomers') || '[]');
-    const idx = existing.findIndex(c =>
-        c.nama.toLowerCase() === tempResetAccount.nama.toLowerCase() &&
-        c.telepon === tempResetAccount.telepon
-    );
+    const result = await resetPasswordServer(tempResetAccount.nama, tempResetAccount.telepon, passwordBaru);
 
-    if (idx === -1) {
-        alert('Akun tidak ditemukan, silakan ulangi dari awal.');
-        switchAuthMode('masuk');
+    if (!result || result.success === false) {
+        alert('Gagal mengubah kata sandi. Coba lagi.');
         return;
     }
 
-    existing[idx].password = passwordBaru;
-    localStorage.setItem('sisaPlusCustomers', JSON.stringify(existing));
+    // Update juga cache lokal kalau ada, biar konsisten
+    const existing = JSON.parse(localStorage.getItem('sisaPlusCustomers') || '[]');
+    const idx = existing.findIndex(c => c.nama.toLowerCase() === tempResetAccount.nama.toLowerCase());
+    if (idx > -1) {
+        existing[idx].password = passwordBaru;
+        localStorage.setItem('sisaPlusCustomers', JSON.stringify(existing));
+    }
 
     tempResetAccount = null;
     alert('Kata sandi berhasil diubah! Silakan masuk dengan kata sandi baru.');
@@ -3601,21 +3666,20 @@ window.addEventListener('DOMContentLoaded', () => {
     //   atau PWA tapi belum pernah daftar sama sekali)  -> tampilkan
     //   Landing Page dulu seperti biasa (default HTML).
     // ============================================================
+	const isMobileDevice = window.matchMedia('(max-width: 768px)').matches;
     const savedLogin = localStorage.getItem('sisaPlusLogin');
     const hasUsedBefore = localStorage.getItem('sisaHasRegistered') === '1';
     const isStandalonePWA = window.matchMedia('(display-mode: standalone)').matches
         || window.navigator.standalone === true;
 
-    if (savedLogin) {
-        const data = JSON.parse(savedLogin);
-        window._obTarget = 'app';
-        window._obLoginData = data;
-        showOnboardingOnly();
-    } else if (isStandalonePWA && hasUsedBefore) {
-        window._obTarget = 'login';
-        showOnboardingOnly();
-    }
-    // else: biarkan landing-wrapper tampil (default bawaan HTML)
+if (!isMobileDevice) {
+    // DESKTOP: onboarding tidak pernah muncul, selalu landing page dulu.
+    // (Tombol "Masuk" di landing akan langsung ke form login lewat showApp())
+} else {
+    window._obTarget = 'login';
+    window._obLoginData = savedLogin ? JSON.parse(savedLogin) : null;
+    showOnboardingOnly();
+}
 });
 
 // Tampilkan Onboarding, sembunyikan Landing (app-wrapper tetap disembunyikan
@@ -3641,14 +3705,14 @@ function completeOnboarding() {
     document.body.classList.remove('landing-mode');
     document.body.classList.add('app-mode');
 
-    if (window._obTarget === 'app' && window._obLoginData) {
-        // User sudah login sebelumnya -> langsung masuk app, skip form login
-        document.getElementById('login-layer').style.display = 'none';
-        executeLogin(window._obLoginData);
-        if (typeof restoreLastPage === 'function') restoreLastPage(window._obLoginData);
-    } else {
-        // User belum login -> tampilkan form login (Masuk/Daftar)
-        document.getElementById('login-layer').style.display = '';
+    document.getElementById('login-layer').style.display = '';
+
+    // Kalau ada data login/daftar tersimpan -> isi otomatis form Masuk
+    if (window._obLoginData) {
+        const namaField = document.getElementById('masukNama');
+        const passField = document.getElementById('masukPassword');
+        if (namaField) namaField.value = window._obLoginData.nama || '';
+        if (passField) passField.value = window._obLoginData.password || '';
     }
 }
 
@@ -3716,12 +3780,26 @@ if (daftarTelepon) {
 // memanggil showApp() untuk menampilkan form login. Sekarang, tombol itu
 // diarahkan dulu ke halaman Onboarding; setelah swipe di Onboarding
 // selesai, baru form login ditampilkan (lihat completeOnboarding()).
+
 function showApp(action) {
     if (action) {
         sessionStorage.setItem('pendingAction', action);
     }
-    window._obTarget = 'login';
-    showOnboardingOnly();
+
+    const isMobileDevice = window.matchMedia('(max-width: 768px)').matches;
+
+    if (isMobileDevice) {
+        // MOBILE: tetap lewat onboarding dulu
+        window._obTarget = 'login';
+        showOnboardingOnly();
+    } else {
+        // DESKTOP: skip onboarding, langsung tampilkan form login
+        document.getElementById('landing-wrapper').style.display = 'none';
+        document.getElementById('app-wrapper').style.display = 'block';
+        document.getElementById('login-layer').style.display = '';
+        document.body.classList.remove('landing-mode');
+        document.body.classList.add('app-mode');
+    }
 }
 
 function backToLanding() {

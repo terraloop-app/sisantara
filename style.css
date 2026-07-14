@@ -2492,7 +2492,12 @@ body.app-mode {
     padding-bottom: 90px !important;
     color: inherit !important;
 }
-
+body.onboarding-mode {
+    overflow: hidden !important;
+    height: 100dvh !important;
+    height: 100vh !important; /* fallback browser lama, ditimpa baris di atas kalau dvh didukung */
+    overscroll-behavior: none;
+}
 /* ===== HERO TITLE ALWAYS WHITE — perlindungan absolut ===== */
 .hero-title,
 body .hero-title,
@@ -5551,6 +5556,11 @@ body.landing-mode .hero-title,
         width: 100%;
         min-height: auto;
     }
+
+    #landing-wrapper {
+        display: none !important;
+    }
+}
     .auth-color-side {
         border-radius: 0 0 40px 40px;
         padding: 30px 24px;
@@ -6490,6 +6500,7 @@ body.landing-mode .hero-title,
     justify-content: center;
     align-items: stretch;
     background: #e5e5e5;
+	overscroll-behavior: none;   /* ← baris baru */
 }
 
 .ob-shell {
