@@ -1,7 +1,7 @@
 {
-  "name": "TerraLoop",
-  "short_name": "TerraLoop",
-  "description": "TerraLoop",
+  "name": "sisantara",
+  "short_name": "sisantara",
+  "description": "sisantara",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#ffffff",
