@@ -6471,3 +6471,310 @@ body.landing-mode .hero-title,
 .checkout-summary-row.discount .value{
     color: #10b981;
 }
+/* ============================================================
+   ONBOARDING — SISANTARA
+   Muncul sebelum login (dari landing "Masuk Sekarang"), atau
+   langsung (skip landing) untuk user yang sudah login / sudah
+   install PWA & pernah pakai. Semua class diprefix "ob-" supaya
+   tidak bentrok dengan class landing/app yang sudah ada
+   (terutama .hero yang sudah dipakai di landing page).
+   Reset (*{margin/padding/box-sizing}) TIDAK diduplikat, sudah
+   ada di baris atas file ini.
+   ============================================================ */
+
+#onboarding-wrapper {
+    display: none; /* di-toggle via JS: 'flex' saat aktif */
+    min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
+    justify-content: center;
+    align-items: stretch;
+    background: #e5e5e5;
+}
+
+.ob-shell {
+    width: 100%;
+    max-width: 480px; /* di desktop tampil seperti kartu mobile-app di tengah */
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: linear-gradient(180deg, #1f6feb 0%, #1a5fe0 35%, #1257d6 100%);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+@media (min-width: 481px) {
+    .ob-shell {
+        margin: 24px 0;
+        min-height: calc(100vh - 48px);
+        border-radius: 28px;
+        box-shadow: 0 30px 60px rgba(0,0,0,0.35);
+    }
+}
+
+/* Top hero section */
+.ob-hero {
+    position: relative;
+    padding-top: 56px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.ob-glow {
+    position: absolute;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 420px;
+    height: 420px;
+    background: radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 45%, rgba(255,255,255,0) 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.ob-logo-wrap {
+    position: relative;
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 16px auto;
+    border-radius: 50%;
+    background: #FFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.ob-logo-wrap img {
+    width: 165px;
+    height: 165px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 14px rgba(0,0,0,0.15));
+}
+
+.ob-brand-title {
+    font-family: 'Baloo 2', 'Plus Jakarta Sans', sans-serif;
+    color: #ffffff;
+    font-size: 33px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+}
+.ob-brand-tagline {
+    color: rgba(255,255,255,0.92);
+    font-size: 14px;
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+/* Illustration */
+.ob-illustration-wrap {
+    position: relative;
+    flex: 1;
+    min-height: 160px;
+    margin-top: 18px;
+    overflow: hidden;
+}
+.ob-illustration-wrap img {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    object-position: bottom center;
+}
+
+/* Bottom sheet */
+.ob-sheet {
+    background: #ffffff;
+    border-radius: 32px 32px 0 0;
+    padding: 14px 26px 34px 26px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.08);
+    flex-shrink: 0;
+}
+
+.ob-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 22px;
+}
+.ob-dot {
+    height: 6px;
+    border-radius: 3px;
+    background: #dbe4f5;
+}
+.ob-dot.ob-active {
+    width: 26px;
+    background: #1a5fe0;
+}
+.ob-dot:not(.ob-active) {
+    width: 6px;
+}
+
+.ob-headline {
+    font-family: 'Baloo 2', 'Plus Jakarta Sans', sans-serif;
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 1.18;
+    color: #10233f;
+    text-align: center;
+    margin-bottom: 14px;
+}
+.ob-headline .ob-accent {
+    color: #1a6bf0;
+}
+
+.ob-subtext {
+    text-align: center;
+    color: #6b7789;
+    font-size: 15px;
+    line-height: 1.55;
+    padding: 0 6px;
+    margin-bottom: 26px;
+}
+
+.ob-swipe-track {
+    position: relative;
+    width: 100%;
+    height: 64px;
+    background: linear-gradient(135deg, #eef3fd, #e2eafc);
+    border-radius: 32px;
+    overflow: hidden;
+    user-select: none;
+    box-shadow: inset 0 2px 8px rgba(16,35,63,0.10), inset 0 -1px 0 rgba(255,255,255,0.6);
+}
+
+.ob-swipe-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 64px;
+    background: linear-gradient(135deg, #2f86ff, #1550d6 55%, #0d3aa8);
+    border-radius: 32px;
+    transition: width 0.06s linear;
+    pointer-events: none;
+}
+
+.ob-swipe-arrows {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    pointer-events: none;
+    z-index: 1;
+}
+.ob-swipe-arrows svg {
+    width: 14px;
+    height: 14px;
+    color: #b9c8ea;
+    animation: obArrowFlow 1.6s ease-in-out infinite;
+}
+.ob-swipe-arrows svg:nth-child(1) { animation-delay: 0s; }
+.ob-swipe-arrows svg:nth-child(2) { animation-delay: 0.15s; }
+.ob-swipe-arrows svg:nth-child(3) { animation-delay: 0.3s; }
+@keyframes obArrowFlow {
+    0%   { opacity: 0.25; transform: translateX(0); }
+    50%  { opacity: 1; transform: translateX(3px); }
+    100% { opacity: 0.25; transform: translateX(0); }
+}
+
+.ob-swipe-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    pointer-events: none;
+    z-index: 1;
+    background: linear-gradient(90deg, #4b6ea8 20%, #10233f 40%, #10233f 60%, #4b6ea8 80%);
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: obShimmer 2.6s linear infinite;
+    transition: opacity 0.25s ease;
+}
+@keyframes obShimmer {
+    0%   { background-position: 250% 0; }
+    100% { background-position: -250% 0; }
+}
+
+.ob-swipe-success {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    opacity: 0;
+    transition: opacity 0.3s ease 0.15s;
+    pointer-events: none;
+    z-index: 1;
+}
+.ob-swipe-success svg { width: 18px; height: 18px; }
+.ob-swipe-track.ob-completed .ob-swipe-success { opacity: 1; }
+.ob-swipe-track.ob-completed .ob-swipe-label,
+.ob-swipe-track.ob-completed .ob-swipe-arrows { opacity: 0; transition: opacity 0.15s ease; }
+
+.ob-swipe-handle {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 28%, #ffffff, #f2f6fd 70%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(21,80,214,0.4), 0 0 0 6px rgba(255,255,255,0.25);
+    cursor: grab;
+    touch-action: none;
+    transition: left 0.32s cubic-bezier(.2,.85,.25,1), box-shadow 0.2s ease;
+    z-index: 2;
+}
+.ob-swipe-handle::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid rgba(26,107,240,0.35);
+    animation: obPulseRing 1.8s ease-out infinite;
+}
+.ob-swipe-track.ob-completed .ob-swipe-handle::before { animation: none; opacity: 0; }
+@keyframes obPulseRing {
+    0%   { transform: scale(0.9); opacity: 0.7; }
+    70%  { transform: scale(1.35); opacity: 0; }
+    100% { transform: scale(1.35); opacity: 0; }
+}
+.ob-swipe-handle.ob-dragging {
+    cursor: grabbing;
+    transition: box-shadow 0.2s ease;
+    box-shadow: 0 8px 22px rgba(21,80,214,0.5), 0 0 0 8px rgba(255,255,255,0.3);
+}
+.ob-swipe-handle svg {
+    width: 22px;
+    height: 22px;
+    color: #1550d6;
+    transition: transform 0.25s ease;
+}
+.ob-swipe-track.ob-completed .ob-swipe-handle {
+    background: radial-gradient(circle at 32% 28%, #ffffff, #eaf1ff 70%);
+}
+.ob-swipe-track.ob-completed .ob-swipe-handle svg {
+    transform: scale(0);
+}

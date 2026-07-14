@@ -3493,6 +3493,10 @@ function handleSimpanPasswordBaru() {
 
 // Fungsi untuk mengeksekusi tampilan masuk
 function executeLogin(data) {
+    // Tandai permanen bahwa perangkat ini pernah dipakai untuk login/daftar.
+    // TIDAK dihapus saat logout — dipakai untuk logika Onboarding (skip landing
+    // untuk user yang buka dari PWA & pernah pakai, walau sedang logout).
+    localStorage.setItem('sisaHasRegistered', '1');
     saveAccountToList(data);   // <-- BARIS BARU
     document.getElementById('landing-wrapper').style.display = 'none';
     document.getElementById('app-wrapper').style.display = 'block';
@@ -3565,7 +3569,7 @@ function executeLogin(data) {
 
 // Cek otomatis saat halaman pertama kali dibuka
 window.addEventListener('DOMContentLoaded', () => {
-	initVisitorCounter();
+	//initVisitorCounter();
 
     // 🔑 FIX: prefetch data Toko (produk & banner) + Berita SEDINI MUNGKIN,
     // begitu script dimuat — TIDAK menunggu proses login selesai dulu.
@@ -3584,18 +3588,69 @@ window.addEventListener('DOMContentLoaded', () => {
     // persis dengan kondisi refresh.
     prefetchAppData();
 
+    // ============================================================
+    // ROUTING AWAL: Landing vs Onboarding
+    // ------------------------------------------------------------
+    // - Sudah login (ada sesi tersimpan)              -> Onboarding dulu,
+    //   lalu lanjut LANGSUNG ke app (skip form login).
+    // - Belum login TAPI dibuka sebagai PWA (sudah
+    //   di-install/ditambahkan ke layar) DAN perangkat ini pernah
+    //   dipakai login/daftar sebelumnya                -> Onboarding dulu,
+    //   lalu lanjut ke form login.
+    // - Selain itu (browser biasa & belum pernah daftar sama sekali,
+    //   atau PWA tapi belum pernah daftar sama sekali)  -> tampilkan
+    //   Landing Page dulu seperti biasa (default HTML).
+    // ============================================================
     const savedLogin = localStorage.getItem('sisaPlusLogin');
+    const hasUsedBefore = localStorage.getItem('sisaHasRegistered') === '1';
+    const isStandalonePWA = window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+
     if (savedLogin) {
         const data = JSON.parse(savedLogin);
-        // Langsung masuk ke app tanpa klik tombol Masuk lagi
-        document.getElementById('landing-wrapper').style.display = 'none';
-        document.getElementById('app-wrapper').style.display = 'block';
-        document.body.classList.add('app-mode');
-        document.body.classList.remove('landing-mode');
-        executeLogin(data);
-        restoreLastPage(data); // <-- fungsi baru, dibuat di Langkah 3
+        window._obTarget = 'app';
+        window._obLoginData = data;
+        showOnboardingOnly();
+    } else if (isStandalonePWA && hasUsedBefore) {
+        window._obTarget = 'login';
+        showOnboardingOnly();
     }
+    // else: biarkan landing-wrapper tampil (default bawaan HTML)
 });
+
+// Tampilkan Onboarding, sembunyikan Landing (app-wrapper tetap disembunyikan
+// sampai swipe selesai — lihat completeOnboarding()).
+function showOnboardingOnly() {
+    const landing = document.getElementById('landing-wrapper');
+    const onboarding = document.getElementById('onboarding-wrapper');
+    if (landing) landing.style.display = 'none';
+    if (onboarding) onboarding.style.display = 'flex';
+    document.body.classList.remove('landing-mode');
+    document.body.classList.add('onboarding-mode');
+}
+
+// Dipanggil setelah swipe di Onboarding selesai (lihat init swipe di
+// bagian bawah file ini). Mengarahkan ke app langsung (user sudah login)
+// atau ke form login (user belum login).
+function completeOnboarding() {
+    const onboarding = document.getElementById('onboarding-wrapper');
+    if (onboarding) onboarding.style.display = 'none';
+
+    document.getElementById('app-wrapper').style.display = 'block';
+    document.body.classList.remove('onboarding-mode');
+    document.body.classList.remove('landing-mode');
+    document.body.classList.add('app-mode');
+
+    if (window._obTarget === 'app' && window._obLoginData) {
+        // User sudah login sebelumnya -> langsung masuk app, skip form login
+        document.getElementById('login-layer').style.display = 'none';
+        executeLogin(window._obLoginData);
+        if (typeof restoreLastPage === 'function') restoreLastPage(window._obLoginData);
+    } else {
+        // User belum login -> tampilkan form login (Masuk/Daftar)
+        document.getElementById('login-layer').style.display = '';
+    }
+}
 
 // 🔑 FIX: prefetch terpusat untuk data yang dipakai menu Toko & Berita.
 // Dipanggil sedini mungkin (saat DOMContentLoaded) supaya cache di memori +
@@ -3655,23 +3710,27 @@ if (daftarTelepon) {
 
 
 // ============================================================
-// GLUE: Penghubung Landing Page ↔ Web Utama
+// GLUE: Penghubung Landing Page ↔ Onboarding ↔ Web Utama
 // ============================================================
+// Sebelumnya, tombol CTA landing ("KONTRIBUSI SEKARANG" dkk) langsung
+// memanggil showApp() untuk menampilkan form login. Sekarang, tombol itu
+// diarahkan dulu ke halaman Onboarding; setelah swipe di Onboarding
+// selesai, baru form login ditampilkan (lihat completeOnboarding()).
 function showApp(action) {
-    document.getElementById('landing-wrapper').style.display = 'none';
-    document.getElementById('app-wrapper').style.display = 'block';
-    document.body.classList.add('app-mode');
-    document.body.classList.remove('landing-mode');
-    // Jika ada action, simpan untuk dipakai setelah login
     if (action) {
         sessionStorage.setItem('pendingAction', action);
     }
+    window._obTarget = 'login';
+    showOnboardingOnly();
 }
 
 function backToLanding() {
     document.getElementById('app-wrapper').style.display = 'none';
+    var obWrap = document.getElementById('onboarding-wrapper');
+    if (obWrap) obWrap.style.display = 'none';
     document.getElementById('landing-wrapper').style.display = 'block';
     document.body.classList.remove('app-mode');
+    document.body.classList.remove('onboarding-mode');
     document.body.classList.add('landing-mode');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -4681,15 +4740,79 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-function initVisitorCounter() {
-    fetch('https://api.counterapi.dev/v2/stynlis-boys-team-4723/first-counter-4723/up')
-        .then(res => res.json())
-        .then(data => {
-            const el = document.getElementById('visitorCount');
-            if (el) el.textContent = data.data.up_count.toLocaleString('id-ID');
-        })
-        .catch(() => {
-            const el = document.getElementById('visitorCount');
-            if (el) el.textContent = '-';
-        });
-}
+// ============================================================
+// ONBOARDING — Interaksi Swipe-to-Start
+// ============================================================
+(function () {
+    const track = document.getElementById('obSwipeTrack');
+    const handle = document.getElementById('obSwipeHandle');
+    const fill = document.getElementById('obSwipeFill');
+    if (!track || !handle || !fill) return; // markup onboarding tidak ada
+
+    let dragging = false;
+    let startX = 0;
+    let maxLeft = 0;
+    let completed = false;
+
+    function setup() {
+        maxLeft = track.offsetWidth - handle.offsetWidth - 5;
+    }
+    window.addEventListener('resize', setup);
+    setup();
+
+    function pointerX(e) {
+        return e.touches ? e.touches[0].clientX : e.clientX;
+    }
+
+    function onDown(e) {
+        if (completed) return;
+        setup(); // pastikan maxLeft akurat (mis. saat wrapper baru ditampilkan)
+        dragging = true;
+        startX = pointerX(e) - handle.offsetLeft;
+        handle.classList.add('ob-dragging');
+    }
+
+    function onMove(e) {
+        if (!dragging) return;
+        let newLeft = Math.min(Math.max(pointerX(e) - startX, 5), maxLeft);
+        handle.style.left = newLeft + 'px';
+        fill.style.width = (newLeft + handle.offsetWidth) + 'px';
+
+        if (newLeft >= maxLeft - 2) {
+            finishSwipe();
+        }
+    }
+
+    function onUp() {
+        if (!dragging) return;
+        dragging = false;
+        handle.classList.remove('ob-dragging');
+        if (!completed) {
+            handle.style.left = '5px';
+            fill.style.width = handle.offsetWidth + 'px';
+        }
+    }
+
+    function finishSwipe() {
+        if (completed) return;
+        completed = true;
+        dragging = false;
+        handle.classList.remove('ob-dragging');
+        handle.style.left = maxLeft + 'px';
+        fill.style.width = '100%';
+        track.classList.add('ob-completed');
+
+        setTimeout(() => {
+            if (typeof completeOnboarding === 'function') {
+                completeOnboarding();
+            }
+        }, 550);
+    }
+
+    handle.addEventListener('mousedown', onDown);
+    handle.addEventListener('touchstart', onDown, { passive: true });
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('touchmove', onMove, { passive: true });
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchend', onUp);
+})();
