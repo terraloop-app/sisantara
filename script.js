@@ -612,10 +612,16 @@ function getLevelBadgeSVG(levelName) {
                 window.sisaOrderSyncInterval = setInterval(syncOrderStatusFromServer, 5000);
             }
             // Refresh total limbah dari server setiap 60 detik
-            if (!window.sisaCustomerTotalInterval) {
+           if (!window.sisaCustomerTotalInterval) {
                 window.sisaCustomerTotalInterval = setInterval(fetchCustomerTotalFromServer, 60000);
             }
+            // Cek tiap 1 menit apakah card "Selesai" sudah lewat 1 jam → auto reset
+            if (!window.sisaAutoResetInterval) {
+                window.sisaAutoResetInterval = setInterval(checkAutoResetCompletedPickup, 60000);
+            }
+            checkAutoResetCompletedPickup();
         }
+
 
         // ============================================================
         // SYNC ORDER STATUS DARI SERVER — update home activity & simart
@@ -844,7 +850,12 @@ function getLevelBadgeSVG(levelName) {
                         sendCustomer();
                         showToast('✅ Penjemputan selesai! Kontribusi Anda bertambah ' + beratFinal + ' kg (+' + koinFinal + ' koin)', 'success');   // ← diubah, tambah info koin
                     }
-                    localStorage.removeItem(storageKey);
+// BARU: jangan langsung hapus — card tetap tampil sampai
+                    // customer klik tombol "Selesai" atau otomatis reset 1 jam lagi
+                    if (!localPickup.completedShownAt) {
+                        localPickup.completedShownAt = new Date().toISOString();
+                        localStorage.setItem(storageKey, JSON.stringify(localPickup));
+                    }
                     updateActivePickupStatus();
                     updateTrackingStatus();
                 }
@@ -921,20 +932,51 @@ const el = document.getElementById('totalWaste');
             `).join('');
         }
 
+// ============================================================
+        // SVG ICONS & STATUS MAP (dipakai timeline SiTrack)
+        // ============================================================
+        const svgIcons = {
+            scheduled: (color) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="15" r="1.5" fill="${color}"/></svg>`,
+            picked: (color) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
+            processed: (color) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+            completed: (color) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+            cancelled: (color) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`
+        };
+
+        const statusMap = {
+            'scheduled':  { label:'Dijadwalkan',      bg:'#0868e3', color:'#ffffff', iconKey:'scheduled' },
+            'picked':     { label:'Sedang Dijemput',  bg:'#ffc900', color:'#373737', iconKey:'picked' },
+            'processed':  { label:'Sedang Diproses',  bg:'#b110ff', color:'#ffffff', iconKey:'processed' },
+            'completed':  { label:'Selesai',          bg:'#58ec3d', color:'#373737', iconKey:'completed' },
+            'cancelled':  { label:'Dibatalkan',       bg:'#ea000b', color:'#ffffff', iconKey:'cancelled' }
+        };
+
         // ============================================================
         // UPDATE TRACKING STATUS (step tracker di SiTrack)
         // ============================================================
         function updateTrackingStatus() {
             const activePickup = getActivePickup();
+           const stepIconKeys = ['scheduled', 'picked', 'processed', 'completed'];
             for (let i = 1; i <= 4; i++) {
                 const item = document.getElementById('stepItem' + i);
                 if (item) item.className = 'step-item';
+                const iconSlot = document.getElementById('stepIcon' + i);
+                if (iconSlot) iconSlot.innerHTML = ''; // kosongkan dulu, nanti diisi cuma di step aktif
             }
-            document.getElementById('statusDesc1').textContent = 'Belum ada jadwal';
+			document.getElementById('statusDesc1').textContent = 'Belum ada jadwal';
             document.getElementById('statusDesc2').textContent = 'Menunggu penjemputan';
             document.getElementById('statusDesc3').textContent = 'Menunggu diproses';
             document.getElementById('statusDesc4').textContent = 'Belum selesai';
             if (!activePickup) return;
+			
+			const st = normalizeStatus(activePickup.status || 'scheduled');
+            const activeIndex = { scheduled: 1, picked: 2, processed: 3, completed: 4 }[st] || 0;
+            for (let i = 1; i <= activeIndex; i++) {
+                const key = stepIconKeys[i - 1];
+                const iconColor = (i === activeIndex) ? statusMap[st].bg : '#22C55E';
+                const iconSlot = document.getElementById('stepIcon' + i);
+                if (iconSlot) iconSlot.innerHTML = svgIcons[key](iconColor);
+            }
 
             const status = normalizeStatus(activePickup.status || 'scheduled');
             const berat  = activePickup.weight || '-';
@@ -975,44 +1017,37 @@ const el = document.getElementById('totalWaste');
         // ============================================================
         function updateActivePickupStatus() {
             const activePickup  = getActivePickup();
-            const container     = document.getElementById('activePickupStatus');
             const cancelSection = document.getElementById('cancelPickupSection');
+            const btnSelesai    = document.getElementById('btnSelesaiPickup');
             if (!activePickup) {
-                container.innerHTML = '<div class="status-desc" style="text-align:center;padding:20px 0">Belum ada penjemputan aktif</div>';
                 cancelSection.style.display = 'none';
+                if (btnSelesai) btnSelesai.style.display = 'none';
                 return;
             }
             const st = normalizeStatus(activePickup.status || 'scheduled');
-          // SVG Icons (warna mengikuti info.color agar kontras dengan background)
-const svgIcons = {
-    scheduled: (color) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="15" r="1.5" fill="${color}"/></svg>`,
-    picked: (color) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
-    processed: (color) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
-    completed: (color) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
-    cancelled: (color) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`
-};
-
-const statusMap = {
-     'scheduled':  { label:'Dijadwalkan',     bg:'#0868e3', color:'#ffffff', iconKey:'scheduled' },
-     'picked':     { label:'Sedang Dijemput',  bg:'#ffc900', color:'#373737', iconKey:'picked' },
-     'processed':  { label:'Sedang Diproses',  bg:'#b110ff', color:'#ffffff', iconKey:'processed' },
-     'completed':  { label:'Selesai',           bg:'#58ec3d', color:'#373737', iconKey:'completed' },
-     'cancelled':  { label:'Dibatalkan',        bg:'#ea000b', color:'#ffffff', iconKey:'cancelled' }
- };
-            const info = statusMap[st] || statusMap['scheduled'];
-            const iconSvg = svgIcons[info.iconKey](info.color);
-container.innerHTML = `
-    <div style="display:flex;align-items:center;gap:14px;padding:14px 0;">
-        <div style="width:48px;height:48px;border-radius:14px;background:${info.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${iconSvg}</div>
-        <div style="flex:1;">
-            <div style="font-size:15px;font-weight:700;color:${info.color};margin-bottom:4px;">${info.label}</div>
-            <div style="font-size:12px;color:#64748b;">Tanggal: ${activePickup.date} | Berat: ${activePickup.weight || '-'} kg</div>
-        </div>
-        <span style="display:inline-block;padding:5px 12px;border-radius:20px;background:${info.bg};color:${info.color};font-size:12px;font-weight:600;">${info.label}</span>
-    </div>
-`;
             cancelSection.style.display = (st === 'scheduled') ? 'block' : 'none';
+            if (btnSelesai) btnSelesai.style.display = (st === 'completed') ? 'block' : 'none';
         }
+// ============================================================
+        // RESET CARD SETELAH SELESAI (manual via tombol / otomatis 1 jam)
+        // ============================================================
+        function resetCompletedPickup() {
+            removeActivePickup();
+            updateTrackingStatus();
+            updateActivePickupStatus();
+        }
+
+        function checkAutoResetCompletedPickup() {
+            const activePickup = getActivePickup();
+            if (!activePickup) return;
+            const status = normalizeStatus(activePickup.status || '');
+            if (status !== 'completed' || !activePickup.completedShownAt) return;
+            const elapsed = Date.now() - new Date(activePickup.completedShownAt).getTime();
+            if (elapsed >= 3600000) { // 1 jam = 3600000 ms
+                resetCompletedPickup();
+            }
+        }
+
 
         // ============================================================
         // CANCEL PICKUP
@@ -1176,7 +1211,7 @@ function closeWasteDetail(e) {
 		
         // ============================================================
 
-		const SWIPE_PAGES = ['homePage', 'sipickPage', 'simartPage', 'sitrackPage'];
+		const SWIPE_PAGES = ['newsPage', 'simartPage', 'homePage', 'sipickPage', 'sitrackPage'];
 
         function switchPage(pageId, navItem) {
             document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
@@ -1226,31 +1261,153 @@ function closeWasteDetail(e) {
 		(function initSwipeNav() {
     const container = document.querySelector('#customerView .container');
     if (!container) return;
+
     let touchStartX = 0, touchStartY = 0;
+    let dragging = false, horizontalLock = null, direction = 0;
+    let currentEl = null, targetEl = null, targetId = null;
+    let containerWidth = 0, rafId = null, pendingDelta = 0;
+
+    function prepareTarget(id, dir) {
+        const el = document.getElementById(id);
+        if (!el) return null;
+        el.classList.add('swipe-preview');
+        el.style.display = 'block';
+        el.style.transition = '';
+        el.style.transform = `translateX(${dir > 0 ? containerWidth : -containerWidth}px)`;
+        return el;
+    }
+
+    function applyTransforms(deltaX) {
+        if (currentEl) currentEl.style.transform = `translateX(${deltaX}px)`;
+        if (targetEl) {
+            const base = direction > 0 ? containerWidth : -containerWidth;
+            targetEl.style.transform = `translateX(${base + deltaX}px)`;
+        }
+    }
+
+    function cleanup(keepEl) {
+        [currentEl, targetEl].forEach(el => {
+            if (!el) return;
+            el.style.transition = '';
+            el.style.transform = '';
+            el.classList.remove('swipe-preview');
+            if (el !== keepEl) el.style.display = '';
+        });
+        currentEl = null; targetEl = null; targetId = null; direction = 0;
+    }
 
     container.addEventListener('touchstart', function(e) {
-        touchStartX = e.changedTouches[0].screenX;
-        touchStartY = e.changedTouches[0].screenY;
+        if (e.target.closest('.banner-container, .no-swipe')) { horizontalLock = false; return; }
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        dragging = true;
+        horizontalLock = null;
+        containerWidth = container.clientWidth;
     }, { passive: true });
+
+    container.addEventListener('touchmove', function(e) {
+        if (!dragging) return;
+        const curX = e.touches[0].clientX;
+        const curY = e.touches[0].clientY;
+        const deltaX = curX - touchStartX;
+        const deltaY = curY - touchStartY;
+
+        if (horizontalLock === null) {
+            if (Math.abs(deltaX) < 8 && Math.abs(deltaY) < 8) return;
+            horizontalLock = Math.abs(deltaX) > Math.abs(deltaY);
+            if (horizontalLock) {
+                const activePage = document.querySelector('.page-section.active');
+                const currentIndex = activePage ? SWIPE_PAGES.indexOf(activePage.id) : -1;
+                if (currentIndex === -1) { horizontalLock = false; return; }
+                direction = deltaX < 0 ? 1 : -1; // 1 = geser ke kiri (next), -1 = geser ke kanan (prev)
+                const targetIndex = currentIndex + direction;
+                if (targetIndex < 0 || targetIndex >= SWIPE_PAGES.length) { horizontalLock = false; return; }
+                currentEl = activePage;
+                targetId = SWIPE_PAGES[targetIndex];
+                targetEl = prepareTarget(targetId, direction);
+                currentEl.style.transition = '';
+            }
+        }
+        if (!horizontalLock) return;
+
+        e.preventDefault();
+        pendingDelta = deltaX;
+        if (rafId) return;
+        rafId = requestAnimationFrame(() => { applyTransforms(pendingDelta); rafId = null; });
+    }, { passive: false });
 
     container.addEventListener('touchend', function(e) {
-        const diffX = e.changedTouches[0].screenX - touchStartX;
-        const diffY = e.changedTouches[0].screenY - touchStartY;
-        if (Math.abs(diffX) < 60 || Math.abs(diffX) < Math.abs(diffY)) return;
+        if (!dragging) return;
+        dragging = false;
+        if (!horizontalLock || !currentEl) { horizontalLock = null; return; }
 
-        const activePage = document.querySelector('.page-section.active');
-        if (!activePage) return;
-        const currentIndex = SWIPE_PAGES.indexOf(activePage.id);
-        if (currentIndex === -1) return;
+        const deltaX = e.changedTouches[0].clientX - touchStartX;
+        const passedThreshold = Math.abs(deltaX) > containerWidth * 0.35;
+        const finalCurrent = currentEl, finalTarget = targetEl, finalTargetId = targetId, dir = direction;
 
-        let targetIndex = diffX < 0 ? currentIndex + 1 : currentIndex - 1;
-        if (targetIndex < 0 || targetIndex >= SWIPE_PAGES.length) return;
+        finalCurrent.style.transition = 'transform 0.25s ease';
+        if (finalTarget) finalTarget.style.transition = 'transform 0.25s ease';
 
-        const targetPageId = SWIPE_PAGES[targetIndex];
-        const navBtn = document.querySelector(`.nav-item[onclick*="${targetPageId}"]`);
-        switchPage(targetPageId, navBtn);
-    }, { passive: true });
+        if (passedThreshold && finalTarget) {
+            finalCurrent.style.transform = `translateX(${dir > 0 ? -containerWidth : containerWidth}px)`;
+            finalTarget.style.transform = 'translateX(0px)';
+            setTimeout(() => {
+                const navBtn = document.querySelector(`.nav-item[onclick*="${finalTargetId}"]`);
+                switchPage(finalTargetId, navBtn);
+                cleanup(document.getElementById(finalTargetId));
+            }, 250);
+        } else {
+            finalCurrent.style.transform = 'translateX(0px)';
+            if (finalTarget) finalTarget.style.transform = `translateX(${dir > 0 ? containerWidth : -containerWidth}px)`;
+            setTimeout(() => cleanup(finalCurrent), 250);
+        }
+        horizontalLock = null;
+    });
 })();
+
+// Slide animasi otomatis saat tap bottom nav (arah sesuai posisi di SWIPE_PAGES)
+function animatedSwitchPage(pageId, navItem) {
+    const activePage = document.querySelector('.page-section.active');
+    if (!activePage || activePage.id === pageId) { switchPage(pageId, navItem); return; }
+
+    const fromIndex = SWIPE_PAGES.indexOf(activePage.id);
+    const toIndex = SWIPE_PAGES.indexOf(pageId);
+    const container = document.querySelector('#customerView .container');
+    const targetEl = document.getElementById(pageId);
+
+    if (fromIndex === -1 || toIndex === -1 || !container || !targetEl) {
+        switchPage(pageId, navItem);
+        return;
+    }
+
+    const containerWidth = container.clientWidth;
+    const dir = toIndex > fromIndex ? 1 : -1;
+
+    targetEl.classList.add('swipe-preview');
+    targetEl.style.display = 'block';
+    targetEl.style.transition = '';
+    targetEl.style.transform = `translateX(${dir > 0 ? containerWidth : -containerWidth}px)`;
+    activePage.style.transition = '';
+    activePage.style.transform = 'translateX(0px)';
+    void targetEl.offsetWidth; // force reflow
+
+    requestAnimationFrame(() => {
+        activePage.style.transition = 'transform 0.28s ease';
+        targetEl.style.transition = 'transform 0.28s ease';
+        activePage.style.transform = `translateX(${dir > 0 ? -containerWidth : containerWidth}px)`;
+        targetEl.style.transform = 'translateX(0px)';
+    });
+
+    setTimeout(() => {
+        switchPage(pageId, navItem);
+        [activePage, targetEl].forEach(el => {
+            el.style.transition = '';
+            el.style.transform = '';
+            el.classList.remove('swipe-preview');
+        });
+        activePage.style.display = '';
+    }, 300);
+}
 
         // ============================================================
         // REWARD PAGE

@@ -795,6 +795,7 @@
                             <div class="step-label">Dijadwalkan</div>
                             <div class="step-desc" id="statusDesc1">Belum ada jadwal</div>
                         </div>
+						<div class="step-icon-slot" id="stepIcon1"></div>
                     </div>
                     <div class="step-item" id="stepItem2">
                         <div class="step-connector-top"></div>
@@ -804,6 +805,7 @@
                             <div class="step-label">Dijemput</div>
                             <div class="step-desc" id="statusDesc2">Menunggu penjemputan</div>
                         </div>
+						<div class="step-icon-slot" id="stepIcon2"></div>
                     </div>
                     <div class="step-item" id="stepItem3">
                         <div class="step-connector-top"></div>
@@ -813,6 +815,7 @@
                             <div class="step-label">Diproses</div>
                             <div class="step-desc" id="statusDesc3">Menunggu diproses</div>
                         </div>
+						<div class="step-icon-slot" id="stepIcon3"></div>
                     </div>
                     <div class="step-item" id="stepItem4">
                         <div class="step-connector-top"></div>
@@ -822,20 +825,26 @@
                             <div class="step-label">Selesai</div>
                             <div class="step-desc" id="statusDesc4">Belum selesai</div>
                         </div>
+						<div class="step-icon-slot" id="stepIcon4"></div>
                     </div>
-                </div>
-            </div>
-               <div class="track-status slide-up">
-            <div class="track-title">Status Penjemputan Aktif</div>
-                <div id="activePickupStatus">
-                    <div class="status-desc" style="text-align:center;padding:20px 0">Belum ada penjemputan aktif</div>
-                </div>
-            </div>
+                </div> 
+			</div>
+                <button id="btnSelesaiPickup" onclick="resetCompletedPickup()" style="display:none;width:100%;padding:12px;background:#22C55E;color:#fff;border:none;border-radius:12px;font-weight:600;font-size:14px;cursor:pointer;margin-top:12px;">
+                    Selesai — Sembunyikan
+                </button>
+          
 
-            <div id="cancelPickupSection" style="display:none;" class="slide-up">
+           <div id="cancelPickupSection" style="display:none;" class="slide-up">
+				
                 <button class="btn-cancel" onclick="cancelPickup()" style="width:100%;padding:14px;background:#ef4444;color:#fff;border:none;border-radius:12px;font-weight:600;font-size:15px;cursor:pointer;margin-top:16px;">
                     Batalkan Penjemputan
                 </button>
+            </div>
+
+  <div class="level-card slide-up" id="levelBadge">
+                <div class="level-title">Level Kontribusi</div>
+                <div class="level-name" id="levelName">-</div>
+                <div class="level-progress" id="levelProgress">Kumpulkan 50 kg untuk level Perunggu</div>
             </div>
 
             <div class="track-status slide-up">
@@ -843,22 +852,6 @@
                 <div id="historyContainer">
                     <div class="status-desc" style="text-align:center;padding:20px 0">Belum ada riwayat penjemputan</div>
                 </div>
-            </div>
-     <!-- STATUS PESANAN — step tracker style -->
-            <div class="track-status slide-up" style="margin-top:20px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                    <div class="track-title" style="margin-bottom:0;">Status Pesanan</div>
-                    <button onclick="loadMyOrders(this)" style="padding:6px 12px;background:#eff6ff;color:#2563eb;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Refresh</button>
-                </div>
-                <div id="myOrdersList">
-                    <div style="text-align:center;padding:20px 0;color:#94a3b8;font-size:14px;">Memuat pesanan...</div>
-                </div>
-            </div>
-	
-  <div class="level-card slide-up" id="levelBadge">
-                <div class="level-title">Level Kontribusi</div>
-                <div class="level-name" id="levelName">-</div>
-                <div class="level-progress" id="levelProgress">Kumpulkan 50 kg untuk level Perunggu</div>
             </div>
 
         </div>
@@ -995,8 +988,8 @@
     <button class="btn-primary" onclick="schedulePickup()">Jadwalkan Sekarang</button>
 </div>
 
-           <button class="btn-primary" style="margin-top:16px;" onclick="switchPage('sitrackPage', null)">
-                Lihat Status
+           <button class="btn-text-link" style="margin-top:16px;" onclick="switchPage('sitrackPage', null)">
+                Lihat Status Penjemputan
             </button>
         </div>
    </div>
@@ -1547,25 +1540,25 @@
     </div><!-- end customerView -->
 
   <div class="bottom-nav-wrapper"><nav class="bottom-nav">
-    <button class="nav-item" onclick="switchPage('newsPage', this)">
+     <button class="nav-item" onclick="animatedSwitchPage('newsPage', this)">
         <svg class="nav-icon-svg nav-icon-news" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h4"/></svg>
         <div class="nav-label">News</div>
     </button>
-    <button class="nav-item" onclick="switchPage('simartPage', this)">
+    <button class="nav-item" onclick="animatedSwitchPage('simartPage', this)">
         <svg class="nav-icon-svg nav-icon-toko" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>
         <div class="nav-label">Toko</div>
     </button>
     <div class="nav-spacer"></div>
-    <button class="nav-item" onclick="switchPage('sipickPage', this)">
+    <button class="nav-item" onclick="animatedSwitchPage('sipickPage', this)">
         <svg class="nav-icon-svg nav-icon-jemput" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
         <div class="nav-label">Jemput</div>
     </button>
-    <button class="nav-item" onclick="switchPage('sitrackPage', this)">
+   <button class="nav-item" onclick="animatedSwitchPage('sitrackPage', this)">
         <svg class="nav-icon-svg nav-icon-lacak" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
         <div class="nav-label">Lacak</div>
     </button>
 </nav>
-<button class="nav-item nav-home active" onclick="switchPage('homePage', this)">
+<button class="nav-item nav-home active" onclick="animatedSwitchPage('homePage', this)">
     <svg class="nav-icon-svg nav-icon-home" viewBox="0 0 24 24"><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/></svg>
     <div class="nav-label">Home</div>
 </button>
