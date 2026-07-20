@@ -51,11 +51,11 @@
                 <li><a href="#aksi" class="nav-link">Aksi Nyata</a></li>
                 <li><a href="#fitur" class="nav-link">Fitur</a></li>
                 <li class="nav-mobile-cta" style="padding-top:0.5rem;">
-                    <a href="#" onclick="showApp('sipick'); return false;" class="btn btn-primary" style="width:100%;justify-content:center;">KONTRIBUSI SEKARANG</a>
+                    <a href="#" onclick="showApp(); return false;" class="btn btn-primary" style="width:100%;justify-content:center;">KONTRIBUSI SEKARANG</a>
                 </li>
             </ul>
 
-            <a href="#" onclick="showApp('sipick'); return false;" class="btn btn-primary nav-cta-desktop">KONTRIBUSI SEKARANG</a>
+            <a href="#" onclick="showApp(); return false;" class="btn btn-primary nav-cta-desktop">KONTRIBUSI SEKARANG</a>
 
             <button class="mobile-menu-btn" id="mobileMenuBtn">
                 <span></span>
@@ -72,10 +72,14 @@
                 <h1 class="hero-title">Mengurai Sisa Menjemput Asa</h1>
                 <p class="hero-desc">Ekosistem digital yang menyatukan langkah masyarakat, pelaku usaha, dan komunitas untuk menghidupkan kembali limbah organik demi bumi yang lebih hijau dan lestari.</p>
                 <div class="hero-actions">
-    <a href="#" onclick="showApp('sipick'); return false;" class="btn btn-primary">KONTRIBUSI SEKARANG</a>
+    <a href="#" onclick="showApp(); return false;" class="btn btn-primary">KONTRIBUSI SEKARANG</a>
     <a href="#aksi" class="btn btn-outline">Lihat Aksi Nyata</a>
 </div>
-<img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fsisantara.my.id&count_bg=%230868E3&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=&edge_flat=false" alt="visitor count" style="height:20px;">
+<div class="visitor-counter" id="visitorCounterBox" title="Jumlah pengunjung">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+    <span id="visitorCountValue">-</span>
+    <span>pengunjung</span>
+</div>
             </div>
             
            
@@ -285,7 +289,7 @@
         <div class="container cta-content fade-up">
             <h2>Siap Berkontribusi untuk Lingkungan?</h2>
             <p>Jadilah bagian dari revolusi pengelolaan sampah berbasis teknologi. Mulai kontribusi nyata Anda hari ini dan ciptakan lingkungan yang lebih bersih bersama SISA+.</p>
-            <a href="#" onclick="showApp('sipick'); return false;" class="btn btn-large">MULAI KONTRIBUSI SEKARANG</a>
+            <a href="#" onclick="showApp(); return false;" class="btn btn-large">MULAI KONTRIBUSI SEKARANG</a>
         </div>
     </section>
 
@@ -364,7 +368,7 @@
         <div class="ob-dot ob-active"></div>
       </div>
 
-      <div class="ob-headline">Masa Depan<br>Pengelolaan <span class="ob-accent">Sampah</span></div>
+		<div class="ob-headline">Mengurai <span class="ob-accent">sisa</span> <br> Menjemput <span class="ob-accent">Asa</span></div>
 
       <div class="ob-subtext">Kelola sampah lebih mudah, pantau prosesnya, dan dapatkan reward secara transparan.</div>
 
@@ -389,7 +393,6 @@
         </div>
       </div>
     </div>
-
   </div>
 </div>
 
@@ -401,10 +404,12 @@
 
         <!-- SISI KIRI: FORM -->
         <div class="auth-form-side">
-            <img src="https://i.ibb.co.com/5XJN9RRZ/image-removebg-preview.png" alt="SISA+" class="auth-logo">
+            <div class="auth-logo-wrap">
+    <img src="https://i.ibb.co.com/5XJN9RRZ/image-removebg-preview.png" alt="SISA+" class="auth-logo">
+</div>
             
             <div id="colorMasukText" class="auth-intro-text">
-    <h2>Halo, Sobat Terra!</h2>
+    <h2>Selamat Datang</h2>
     <p>Daftarkan dirimu untuk mulai berkontribusi menjaga lingkungan bersama TerraLoop</p>
 </div>
 
@@ -558,7 +563,7 @@
                         <div class="home-hero-rupiah" id="totalWasteRupiah">= Rp0</div>
                     </div>
                     <div id="levelIconHome" class="level-icon-home"></div>   <!-- ← TAMBAHKAN INI -->
-                    <button class="home-hero-btn" onclick="goToRewardPage()">Lihat boy</button>
+                    <button class="home-hero-btn" onclick="goToRewardPage()">Lihat Reward</button>
                 </div>
             </div>
 
@@ -647,7 +652,7 @@
                 </div>
                 <div class="home-action-card outline" onclick="switchPage('newsPage', null)">
                     <div>
-                     <svg xmlns="https://raw.githubusercontent.com/tailwindlabs/heroicons/master/optimized/24/outline/newspaper.svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <path d="M4 4h13a2 2 0 0 1 2 2v13a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V4z"></path>
   <path d="M18 9h2a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2H6"></path>
   <line x1="8" y1="8" x2="14" y2="8"></line>
@@ -664,18 +669,10 @@
             <!-- JUDUL RINGKASAN -->
            
 
-            <!-- RINGKASAN SINGKAT -->
-            <div class="summary-stats slide-up">
-                <div class="summary-card" style="border-left:4px solid #0868E3;">
-                    <div style="font-size:22px;margin-bottom:6px;">📦</div>
-                    <div class="summary-value" id="monthlyPickups" style="color:#0868E3;">0</div>
-                    <div class="summary-label" style="color:#0868E3;font-weight:700;">Penjemputan</div>
-                </div>
-                <div class="summary-card" style="border-left:4px solid #0868E3;">
-                    <div style="font-size:22px;margin-bottom:6px;">⚖️</div>
-                    <div class="summary-value" id="monthlyKg" style="color:#0868E3;">0</div>
-                    <div class="summary-label" style="color:#0868E3;font-weight:700;">Total Kg</div>
-                </div>
+            <!-- RINGKASAN SINGKAT (I1: digabung jadi 1 card + bar chart) -->
+            <div class="home-chart-card slide-up">
+                <div class="home-chart-title">Tren Kg Terkumpul (7 Hari Terakhir)</div>
+                <div class="home-chart-bars" id="homeChartBars"></div>
             </div>
 			
 			
@@ -731,7 +728,7 @@
                         <path d="M12 1V23M17 5H9.5C8.57174 5 7.6815 5.36875 7.02513 6.02513C6.36875 6.6815 6 7.57174 6 8.5C6 9.42826 6.36875 10.3185 7.02513 10.9749C7.6815 11.6313 8.57174 12 9.5 12H14.5C15.4283 12 16.3185 12.3687 16.9749 13.0251C17.6313 13.6815 18 14.5717 18 15.5C18 16.4283 17.6313 17.3185 16.9749 17.9749C16.3185 18.6313 15.4283 19 14.5 19H6" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                     <div class="reward-action-label">Tukar ke Uang</div>
-                    <button class="reward-action-btn" onclick="tukarKoinKeUang()">Tukar</button>
+                    <button class="reward-action-btn" onclick="openTukarModal()">Tukar</button>
                 </div>
                 <div class="reward-action-card">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -752,19 +749,6 @@
                     <div class="reward-item-value" id="rewardStatus" style="color:#10b981;">-</div>
                 </div>
             </div>
-            <div class="reward-claim-section slide-up">
-                <div class="reward-amount">Rp50.000</div>
-                <div class="reward-desc">Nilai reward untuk setiap level yang Anda capai</div>
-                <button class="btn-claim" id="btnClaimReward" onclick="claimReward()">
-                    Klaim Reward
-                </button>
-                <div class="reward-info">
-                    <div class="reward-info-text" id="rewardInfoText">
-                        Kumpulkan 50 kg untuk mencapai level Perunggu dan klaim reward pertama Anda!
-                    </div>
-                </div>
-            </div>
-
            <div class="reward-history-section slide-up">
                 <div class="reward-history-title">Riwayat Transaksi Koin</div>
                 <div class="history-item-list" id="rewardHistoryList">
@@ -834,7 +818,7 @@
                 </button>
           
 
-           <div id="cancelPickupSection" style="display:none;" class="slide-up">
+           <div id="cancelPickupSection" style="display:none;margin-bottom:16px;" class="slide-up">
 				
                 <button class="btn-cancel" onclick="cancelPickup()" style="width:100%;padding:14px;background:#ef4444;color:#fff;border:none;border-radius:12px;font-weight:600;font-size:15px;cursor:pointer;margin-top:16px;">
                     Batalkan Penjemputan
@@ -912,7 +896,6 @@
     <div class="pick-info-text">
         <div class="pick-info-label" id="dateLabel">Pilih Tanggal</div>
     </div>
-    <div class="pick-info-arrow">›</div>
     <input type="hidden" id="pickupDate">
 </div>
 
@@ -928,7 +911,6 @@
     <div class="pick-info-text">
         <div class="pick-info-label" id="weightLabel">Berat (kg)</div>
     </div>
-    <div class="pick-info-arrow">›</div>
     <!-- Input tersembunyi, tetap ada untuk logic -->
     <input type="number" id="pickupWeight" class="pick-info-input-hidden" min="1" step="1" value="">
 </div>
@@ -988,7 +970,7 @@
     <button class="btn-primary" onclick="schedulePickup()">Jadwalkan Sekarang</button>
 </div>
 
-           <button class="btn-text-link" style="margin-top:16px;" onclick="switchPage('sitrackPage', null)">
+           <button class="btn-text-link" id="lihatStatusPenjemputanBtn" style="margin-top:16px;display:none;" onclick="switchPage('sitrackPage', null)">
                 Lihat Status Penjemputan
             </button>
         </div>
@@ -1029,6 +1011,12 @@
                     </svg>
                     <span class="cart-badge" id="cartBadge">0</span>
                 </button>
+                <button class="simart-header-icon-btn" type="button" aria-label="Pesanan" onclick="goToOrderDetail()">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 3h6l1 3h3a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3z" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M9 11h6M9 15h6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
               <button class="simart-header-icon-btn" type="button" aria-label="Notifikasi" onclick="switchPage('notifPage', null)">
                    
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1044,7 +1032,7 @@
                 <circle cx="11" cy="11" r="7" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M21 21l-4.35-4.35" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <input type="text" class="simart-search-input" id="simartSearchInput" placeholder="Cari produk daur ulang...">
+            <input type="text" class="simart-search-input" id="simartSearchInput" placeholder="Cari produk daur ulang..." oninput="filterSimartSearch(this.value)">
             <button class="simart-search-filter-btn" type="button" aria-label="Filter">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M4 5h16M7 12h10M10 19h4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1053,7 +1041,7 @@
         </div>
     </div>
 	<!-- BANNER PROMO — scroll horizontal, gambar dari admin -->
-            <div class="simart-banner-wrapper slide-up">
+            <div class="simart-banner-wrapper no-swipe slide-up">
                 <div class="simart-banner-track" id="simartBannerTrack">
                     <div class="skeleton skeleton-banner" style="width:100%;"></div>
                 </div>
@@ -1062,33 +1050,33 @@
 
            <div class="simart-category-tabs slide-up">
                 <button class="simart-cat-btn active" onclick="filterSimartCategory('all', this)">
-                    <div class="simart-cat-icon-box">
+                    <span class="simart-cat-icon-box">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-                    </div>
+                    </span>
                     <span>Semua</span>
                 </button>
                 <button class="simart-cat-btn" onclick="filterSimartCategory('maggot', this)">
-                    <div class="simart-cat-icon-box">
+                    <span class="simart-cat-icon-box">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2c2 2 3 4 3 6a3 3 0 0 1-6 0c0-2 1-4 3-6z"/><path d="M6 14c0-3 2.5-5 6-5s6 2 6 5-2.5 6-6 6-6-3-6-6z"/></svg>
-                    </div>
+                    </span>
                     <span>Pakan</span>
                 </button>
                 <button class="simart-cat-btn" onclick="filterSimartCategory('pupuk', this)">
-                    <div class="simart-cat-icon-box">
+                    <span class="simart-cat-icon-box">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22s7-4.5 7-11a7 7 0 0 0-14 0c0 6.5 7 11 7 11z"/><circle cx="12" cy="11" r="2.5"/></svg>
-                    </div>
+                    </span>
                     <span>Pupuk</span>
                 </button>
                 <button class="simart-cat-btn" onclick="filterSimartCategory('aksesoris', this)">
-                    <div class="simart-cat-icon-box">
+                    <span class="simart-cat-icon-box">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="7" r="4"/><path d="M9 11v3.5"/><circle cx="9" cy="18" r="3"/></svg>
-                    </div>
+                    </span>
                     <span>Aksesoris</span>
                 </button>
                 <button class="simart-cat-btn" onclick="filterSimartCategory('lainnya', this)">
-                    <div class="simart-cat-icon-box">
+                    <span class="simart-cat-icon-box">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
-                    </div>
+                    </span>
                     <span>Lainnya</span>
                 </button>
             </div>
@@ -1175,50 +1163,82 @@
             </div>
 
             <button class="btn-primary" style="margin-top:16px;" onclick="submitCheckout()">Konfirmasi Pesanan</button>
-            <button class="btn-back slide-up" onclick="switchPage('simartPage', null)" style="margin-top:10px;">
+            <button class="btn-back-checkout slide-up" onclick="switchPage('simartPage', null)">
                 ← Kembali ke SiMart
             </button>
         </div>
 
         <!-- SiImpact Page -->
         <div id="siimpactPage" class="page-section">
-            <div class="page-header-box slide-up" style="margin-top:16px;">
+            <div class="page-header-box slide-up">
                 <div class="page-header-title">SiImpact</div>
             </div>
 
-            <div class="impact-card slide-up" style="background:linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);">
-                <div class="impact-icon">🌍</div>
-                <div class="impact-value" id="impactCarbon" style="color:#1e40af;">0 kg</div>
-                <div class="impact-label" style="color:#1e3a8a;">Pengurangan Emisi Karbon</div>
-                <div class="impact-desc" style="color:#1e40af;">
-                    Sampah organik yang Anda kelola mengurangi emisi gas rumah kaca dari pembusukan di TPA
+            <div class="impact-card slide-up">
+                <div class="impact-image-slot" style="background:linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);">
+                    <!-- [Placeholder: ganti dengan gambar ilustrasi dampak karbon] -->
+                    <span class="impact-image-placeholder-text">[Placeholder: ganti dengan gambar ilustrasi dampak karbon]</span>
+                </div>
+                <div class="impact-card-body">
+                    <div class="impact-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.7 3.8 6 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-6-3.8-9s1.3-6.3 3.8-9z"></path></svg>
+                    </div>
+                    <div class="impact-value" id="impactCarbon" style="color:#1e40af;">0 kg</div>
+                    <div class="impact-label" style="color:#1e3a8a;">Pengurangan Emisi Karbon</div>
+                    <div class="impact-desc" style="color:#1e40af;">
+                        Sampah organik yang Anda kelola mengurangi emisi gas rumah kaca dari pembusukan di TPA
+                    </div>
                 </div>
             </div>
 
-            <div class="impact-card slide-up" style="background:linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);">
-                <div class="impact-icon">🌳</div>
-                <div class="impact-value" id="impactTrees" style="color:#065f46;">0</div>
-                <div class="impact-label" style="color:#064e3b;">Setara Pohon Ditanam</div>
-                <div class="impact-desc" style="color:#065f46;">
-                    Kontribusi Anda setara dengan menanam pohon yang menyerap karbon selama setahun
+            <div class="impact-card slide-up">
+                <div class="impact-image-slot" style="background:linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);">
+                    <!-- [Placeholder: ganti dengan gambar ilustrasi pohon] -->
+                    <span class="impact-image-placeholder-text">[Placeholder: ganti dengan gambar ilustrasi pohon]</span>
+                </div>
+                <div class="impact-card-body">
+                    <div class="impact-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#065f46" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-7"></path><path d="M12 15c-4 0-7-2.7-7-7 3 0 5 1 7 3 2-2 4-3 7-3 0 4.3-3 7-7 7z"></path></svg>
+                    </div>
+                    <div class="impact-value" id="impactTrees" style="color:#065f46;">0</div>
+                    <div class="impact-label" style="color:#064e3b;">Setara Pohon Ditanam</div>
+                    <div class="impact-desc" style="color:#065f46;">
+                        Kontribusi Anda setara dengan menanam pohon yang menyerap karbon selama setahun
+                    </div>
                 </div>
             </div>
 
-            <div class="impact-card slide-up" style="background:linear-gradient(135deg, #fef9c3 0%, #fde68a 100%);">
-                <div class="impact-icon">🥩</div>
-                <div class="impact-value" id="impactProtein" style="color:#78350f;">0 kg</div>
-                <div class="impact-label" style="color:#78350f;">Protein Maggot Dihasilkan</div>
-                <div class="impact-desc" style="color:#92400e;">
-                    Sampah organik Anda menghasilkan protein berkualitas tinggi untuk pakan ternak
+            <div class="impact-card slide-up">
+                <div class="impact-image-slot" style="background:linear-gradient(135deg, #fef9c3 0%, #fde68a 100%);">
+                    <!-- [Placeholder: ganti dengan gambar ilustrasi protein maggot] -->
+                    <span class="impact-image-placeholder-text">[Placeholder: ganti dengan gambar ilustrasi protein maggot]</span>
+                </div>
+                <div class="impact-card-body">
+                    <div class="impact-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#78350f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3c3 0 5 2 6 4 1-2 3-4 6-4-1 6-3 10-6 12-3-2-5-6-6-12z"></path><path d="M12 19v2"></path></svg>
+                    </div>
+                    <div class="impact-value" id="impactProtein" style="color:#78350f;">0 kg</div>
+                    <div class="impact-label" style="color:#78350f;">Protein Maggot Dihasilkan</div>
+                    <div class="impact-desc" style="color:#92400e;">
+                        Sampah organik Anda menghasilkan protein berkualitas tinggi untuk pakan ternak
+                    </div>
                 </div>
             </div>
 
-            <div class="impact-card slide-up" style="background:linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);">
-                <div class="impact-icon">🌾</div>
-                <div class="impact-value" id="impactFertilizer" style="color:#7c2d12;">0 kg</div>
-                <div class="impact-label" style="color:#7c2d12;">Pupuk Organik Dihasilkan</div>
-                <div class="impact-desc" style="color:#9a3412;">
-                    Residu dari proses budidaya menjadi pupuk organik berkualitas untuk pertanian
+            <div class="impact-card slide-up">
+                <div class="impact-image-slot" style="background:linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);">
+                    <!-- [Placeholder: ganti dengan gambar ilustrasi pupuk organik] -->
+                    <span class="impact-image-placeholder-text">[Placeholder: ganti dengan gambar ilustrasi pupuk organik]</span>
+                </div>
+                <div class="impact-card-body">
+                    <div class="impact-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#7c2d12" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"></path><path d="M5 8c2 0 4 1 7 1s5-1 7-1"></path><path d="M5 15c2 0 4 1 7 1s5-1 7-1"></path></svg>
+                    </div>
+                    <div class="impact-value" id="impactFertilizer" style="color:#7c2d12;">0 kg</div>
+                    <div class="impact-label" style="color:#7c2d12;">Pupuk Organik Dihasilkan</div>
+                    <div class="impact-desc" style="color:#9a3412;">
+                        Residu dari proses budidaya menjadi pupuk organik berkualitas untuk pertanian
+                    </div>
                 </div>
             </div>
         </div>
@@ -1249,90 +1269,104 @@
 
         <!-- News Detail Page -->
         <div id="newsDetailPage" class="page-section">
-            <div class="page-header-box slide-up" style="margin-top:16px;">
-                <div class="page-header-icon">📰</div>
-                <div class="page-header-title">Detail Berita</div>
+            <div class="news-detail-header slide-up">
+                <button class="news-detail-icon-btn" onclick="switchPage('newsPage', null)" aria-label="Kembali ke Berita">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                </button>
+                <div class="news-detail-header-title">Detail Berita</div>
+                <button class="news-detail-icon-btn" id="newsDetailBookmarkBtn" onclick="toggleNewsBookmark()" aria-label="Simpan berita">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                </button>
             </div>
             <div class="news-detail-card slide-up" id="newsDetailContent">
                 <!-- diisi oleh JS -->
             </div>
-            <button class="btn-back slide-up" onclick="switchPage('newsPage', null)">
-                ← Kembali ke Berita
-            </button>
         </div>
 
         <!-- Profile Page -->
-        <div id="profilePage" class="page-section" style="padding-top:16px;">
+        <div id="profilePage" class="page-section profile-page-no-top-gap">
             <div class="page-header-box slide-up">
-                <div class="page-header-icon">👤</div>
+                <div class="page-header-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
                 <div class="page-header-title">Profil Saya</div>
             </div>
             <!-- Header Profil -->
-            <div class="profile-header slide-up" style="position:relative;overflow:hidden;">
-                <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(255,255,255,0.08);border-radius:50%;"></div>
-                <div style="position:absolute;bottom:-20px;left:-20px;width:80px;height:80px;background:rgba(255,255,255,0.06);border-radius:50%;"></div>
-                <div class="profile-avatar" style="box-shadow:0 4px 16px rgba(0,0,0,0.15);">👤</div>
-                <div class="profile-name" id="profileName" style="font-size:24px;font-weight:800;">User</div>
-                <div id="profileToko" style="font-size:13px;opacity:0.85;margin-top:2px;">Toko: -</div>
-                <div id="profileLevelBadge" style="display:inline-block;margin-top:10px;padding:5px 16px;background:rgba(255,255,255,0.25);border-radius:20px;font-size:12px;font-weight:700;">Belum Ada Level</div>
+            <div class="profile-header slide-up">
+                <div class="profile-decor-circle profile-decor-circle-1"></div>
+                <div class="profile-decor-circle profile-decor-circle-2"></div>
+                <div class="profile-avatar">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0868E3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <div class="profile-name" id="profileName">User</div>
+                <div class="profile-toko" id="profileToko">Toko: -</div>
+                <div class="profile-level-badge" id="profileLevelBadge">Belum Ada Level</div>
             </div>
 
             <!-- Kartu Info Akun -->
-            <div class="slide-up" style="background:#fff;border-radius:20px;padding:6px 4px;margin-bottom:16px;box-shadow:0 6px 28px rgba(0,0,0,0.30);">
-                <div style="padding:12px 16px 6px;font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">INFORMASI AKUN</div>
+            <div class="account-info-card slide-up">
+                <div class="account-info-title">INFORMASI AKUN</div>
 
-                <div style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-bottom:1px solid #f1f5f9;">
-                    <div style="width:40px;height:40px;border-radius:12px;background:#0868e3;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">👤</div>
-                    <div style="flex:1;">
-                        <div style="font-size:12px;color:#94a3b8;margin-bottom:2px;">Nama Lengkap</div>
-                        <div style="font-size:15px;font-weight:700;color:#1e293b;" id="profileInfoNama">-</div>
+                <div class="account-info-row">
+                    <div class="account-info-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <div class="account-info-text">
+                        <div class="account-info-label">Nama Lengkap</div>
+                        <div class="account-info-value" id="profileInfoNama">-</div>
                     </div>
                 </div>
 
-                <div style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-bottom:1px solid #f1f5f9;">
-                    <div style="width:40px;height:40px;border-radius:12px;background:#0868e3;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏪</div>
-                    <div style="flex:1;">
-                        <div style="font-size:12px;color:#94a3b8;margin-bottom:2px;">Nama Toko</div>
-                        <div style="font-size:15px;font-weight:700;color:#1e293b;" id="profileInfoToko">-</div>
+                <div class="account-info-row">
+                    <div class="account-info-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 21v-6h6v6"/></svg>
+                    </div>
+                    <div class="account-info-text">
+                        <div class="account-info-label">Nama Toko</div>
+                        <div class="account-info-value" id="profileInfoToko">-</div>
                     </div>
                 </div>
 
-                <div style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-bottom:1px solid #f1f5f9;">
-                    <div style="width:40px;height:40px;border-radius:12px;background:##0868e3; display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📱</div>
-                    <div style="flex:1;">
-                        <div style="font-size:12px;color:#94a3b8;margin-bottom:2px;">Nomor HP / WA</div>
-                        <div style="font-size:15px;font-weight:700;color:#1e293b;" id="profileInfoTelepon">-</div>
+                <div class="account-info-row">
+                    <div class="account-info-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    </div>
+                    <div class="account-info-text">
+                        <div class="account-info-label">Nomor HP / WA</div>
+                        <div class="account-info-value" id="profileInfoTelepon">-</div>
                     </div>
                 </div>
 
-                <div style="display:flex;align-items:center;gap:14px;padding:13px 16px;">
-                    <div style="width:40px;height:40px;border-radius:12px;background:#0868e3;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📍</div>
-                    <div style="flex:1;">
-                        <div style="font-size:12px;color:#94a3b8;margin-bottom:2px;">Alamat</div>
-                        <div style="font-size:15px;font-weight:700;color:#1e293b;line-height:1.4;" id="profileInfoAlamat">-</div>
+                <div class="account-info-row account-info-row-last">
+                    <div class="account-info-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    </div>
+                    <div class="account-info-text">
+                        <div class="account-info-label">Alamat</div>
+                        <div class="account-info-value account-info-value-address" id="profileInfoAlamat">-</div>
                     </div>
                 </div>
             </div>
 
             <!-- Kartu Statistik Kontribusi -->
-            <div class="slide-up" style="background:#fff;border-radius:20px;padding:6px 4px;margin-bottom:16px;box-shadow:0 6px 28px rgba(0,0,0,0.30);">
-                <div style="padding:12px 16px 6px;font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">KONTRIBUSI SAYA</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
-                    <div style="padding:16px;border-right:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;text-align:center;">
-                        <div style="font-size:28px;font-weight:800;color:#4A90E2;" id="profileTotalKg">0</div>
-                        <div style="font-size:12px;color:#64748b;margin-top:4px;">Total Kg Limbah</div>
+            <div class="stats-card slide-up">
+                <div class="account-info-title">KONTRIBUSI SAYA</div>
+                <div class="stats-grid">
+                    <div class="stat-cell stat-cell-border-right stat-cell-border-bottom">
+                        <div class="stat-value stat-value-blue" id="profileTotalKg">0</div>
+                        <div class="stat-label">Total Kg Limbah</div>
                     </div>
-                    <div style="padding:16px;border-bottom:1px solid #f1f5f9;text-align:center;">
-                        <div style="font-size:28px;font-weight:800;color:#52C67A;" id="profileTotalPickup">0</div>
-                        <div style="font-size:12px;color:#64748b;margin-top:4px;">Penjemputan</div>
+                    <div class="stat-cell stat-cell-border-bottom">
+                        <div class="stat-value stat-value-green" id="profileTotalPickup">0</div>
+                        <div class="stat-label">Penjemputan</div>
                     </div>
-                    <div style="padding:16px;border-right:1px solid #f1f5f9;text-align:center;">
-                        <div style="font-size:28px;font-weight:800;color:#f59e0b;" id="profileTotalOrder">0</div>
-                        <div style="font-size:12px;color:#64748b;margin-top:4px;">Pesanan</div>
+                    <div class="stat-cell stat-cell-border-right">
+                        <div class="stat-value stat-value-orange" id="profileTotalOrder">0</div>
+                        <div class="stat-label">Pesanan</div>
                     </div>
-                    <div style="padding:16px;text-align:center;">
-                        <div style="font-size:16px;font-weight:800;color:#7c3aed;" id="profileLevel">-</div>
-                        <div style="font-size:12px;color:#64748b;margin-top:4px;">Level Saat Ini</div>
+                    <div class="stat-cell">
+                        <div class="stat-value stat-value-purple stat-value-small" id="profileLevel">-</div>
+                        <div class="stat-label">Level Saat Ini</div>
                     </div>
                 </div>
             </div>
@@ -1340,49 +1374,68 @@
            <!-- Menu Aksi -->
             <div class="profile-menu slide-up">
                 <div class="menu-item" onclick="switchPage('activityPage', null)">
-                    <div class="menu-icon" style="background:#f1f5f9;">📋</div>
+                    <div class="menu-icon menu-icon-gray">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>
+                    </div>
                     <div class="menu-text">
                         <div class="menu-label">Aktivitas Terakhir</div>
                         <div class="menu-desc">Riwayat pesanan & penjemputan terbaru</div>
                     </div>
-                    <div class="menu-arrow">›</div>
+                    <div class="menu-arrow">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </div>
                 </div>
                 <div class="menu-item" onclick="goToRewardPage()">
-					
-                    <div class="menu-icon" style="background:#fef3c7;">🏆</div>
+                    <div class="menu-icon menu-icon-amber">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 4h3a2 2 0 0 1-2 4h-1"/><path d="M7 4H4a2 2 0 0 0 2 4h1"/></svg>
+                    </div>
                     <div class="menu-text">
                         <div class="menu-label">Reward Saya</div>
                         <div class="menu-desc">Klaim reward berdasarkan level</div>
                     </div>
-                    <div class="menu-arrow">›</div>
+                    <div class="menu-arrow">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </div>
                 </div>
                 <div class="menu-item" onclick="switchPage('sitrackPage', null)">
-                    <div class="menu-icon" style="background:#f0fdf4;">🚛</div>
+                    <div class="menu-icon menu-icon-green">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l3 3v5h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>
+                    </div>
                     <div class="menu-text">
                         <div class="menu-label">Riwayat Penjemputan</div>
                         <div class="menu-desc">Lihat semua jadwal dan riwayat</div>
                     </div>
-                    <div class="menu-arrow">›</div>
+                    <div class="menu-arrow">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </div>
                 </div>
                 <div class="menu-item" onclick="switchPage('simartPage', null)">
-                    <div class="menu-icon" style="background:#eff6ff;">🛒</div>
+                    <div class="menu-icon menu-icon-blue">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0868E3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M2 3h2l2.6 12.6A2 2 0 0 0 8.6 17H19a2 2 0 0 0 2-1.7L22 8H6"/></svg>
+                    </div>
                     <div class="menu-text">
                         <div class="menu-label">Riwayat Pesanan</div>
                         <div class="menu-desc">Lihat semua pesanan saya</div>
                     </div>
-                    <div class="menu-arrow">›</div>
+                    <div class="menu-arrow">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </div>
                 </div>
                 <div class="menu-item" onclick="logout()">
-                    <div class="menu-icon" style="background:#fee2e2;">🚪</div>
+                    <div class="menu-icon menu-icon-red">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    </div>
                     <div class="menu-text">
-                        <div class="menu-label" style="color:#dc2626;">Keluar</div>
+                        <div class="menu-label menu-label-danger">Keluar</div>
                         <div class="menu-desc">Logout dari akun ini</div>
                     </div>
-                    <div class="menu-arrow" style="color:#dc2626;">›</div>
+                    <div class="menu-arrow menu-arrow-danger">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </div>
                 </div>
             </div>
         </div>
-		
+			
 
 <!-- NOTIFICATION PAGE (dari popup jadi halaman) -->
         <div id="notifPage" class="page-section" style="padding-top:16px;">
@@ -1426,33 +1479,176 @@
     </div>
     
 
-    <!-- Buy Options Modal -->
-    <div id="buyOptionsModal" class="modal-overlay">
-        <div class="modal-content slide-up">
-            <div class="modal-title" id="buyOptionsTitle">Pilih Aksi</div>
-            <div class="modal-text" id="buyOptionsText"></div>
-            <div class="modal-buttons" style="flex-direction:column;gap:10px;">
-                <button class="modal-btn primary" style="width:100%;" onclick="buyNowFromModal()">Beli Sekarang</button>
-                <button class="modal-btn secondary" style="width:100%;" onclick="addToCartFromModal()">Masukkan Keranjang</button>
-                <button class="modal-btn secondary" style="width:100%;background:transparent;color:#94a3b8;" onclick="closeBuyOptionsModal()">Batal</button>
+    <!-- Buy Options Modal (F2 redesign — bottom sheet) -->
+    <div id="buyOptionsModal" class="modal-overlay buy-sheet-overlay">
+        <div class="buy-sheet slide-up">
+            <div class="buy-sheet-handle"></div>
+            <button class="buy-sheet-close" type="button" aria-label="Tutup" onclick="closeBuyOptionsModal()">✕</button>
+
+            <div class="buy-sheet-photo-wrap">
+                <div class="buy-sheet-photo-bg"></div>
+                <img id="buyOptionsImg" class="buy-sheet-photo" src="" alt="">
+            </div>
+
+            <div class="buy-sheet-name" id="buyOptionsTitle">Nama Produk</div>
+            <div class="buy-sheet-dots" id="buyOptionsDots"></div>
+            <div class="buy-sheet-price" id="buyOptionsPrice">Rp0</div>
+
+            <div class="buy-sheet-buttons">
+                <button class="buy-sheet-btn primary" onclick="buyNowFromModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6h15l-1.5 9h-12z" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 6L5 3H2" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Beli Sekarang
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button class="buy-sheet-btn outline-blue" onclick="addToCartFromModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6h15l-1.5 9h-12z" stroke="#0868E3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 6L5 3H2" stroke="#0868E3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.5" r="1.3" stroke="#0868E3" stroke-width="1.6"/><circle cx="18" cy="19.5" r="1.3" stroke="#0868E3" stroke-width="1.6"/></svg>
+                    Masukkan Keranjang
+                </button>
+                <button class="buy-sheet-btn outline-gray" onclick="closeBuyOptionsModal()">
+                    Batal
+                </button>
+            </div>
+
+            <div class="buy-sheet-trust">
+                <div class="buy-sheet-trust-item">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" stroke="#10b981" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Transaksi Aman
+                </div>
+                <div class="buy-sheet-trust-item">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l2.6 5.6L21 9l-4.5 4.4L17.6 20 12 16.8 6.4 20l1.1-6.6L3 9l6.4-1.4L12 2z" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Produk Berkualitas
+                </div>
+                <div class="buy-sheet-trust-item">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Ramah Lingkungan
+                </div>
             </div>
         </div>
     </div>
 <!-- Cart Panel -->
-   <!-- Halaman Keranjang -->
-    <div id="cartPage" class="page-section" style="padding-top:16px;">
-        <div class="page-header-box slide-up">
-            <div class="page-header-title">Keranjang Saya</div>
+   <!-- Halaman Keranjang (F1 redesign) -->
+    <div id="cartPage" class="page-section cart-page-no-top-gap">
+        <div class="cart-header slide-up">
+            <button class="cart-back-btn" type="button" aria-label="Kembali" onclick="switchPage('simartPage', null)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 18l-6-6 6-6" stroke="#1e293b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="cart-header-text">
+                <div class="cart-header-title">Keranjang Saya</div>
+                <div class="cart-header-subtitle" id="cartHeaderSubtitle">0 produk • yuk checkout produk daur ulangmu</div>
+            </div>
+            <div class="cart-header-illustration">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 6h15l-1.5 9h-12z" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M6 6L5 3H2" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="9.5" cy="19.5" r="1.4" stroke="#ffffff" stroke-width="1.6"/>
+                    <circle cx="18" cy="19.5" r="1.4" stroke="#ffffff" stroke-width="1.6"/>
+                    <path d="M11 1.5c1.4 1.5 1.9 3 1.7 4.4a2 2 0 0 1-2.2 1.7c-.4-1.4 0-2.9 1-4.3" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
         </div>
-        <div id="cartItemsList" class="track-status slide-up" style="margin-top:16px;"></div>
-        <div class="track-status slide-up" style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;">
-            <span class="track-title" style="margin-bottom:0;">Total</span>
-            <span id="cartTotalText" style="font-weight:700;font-size:16px;color:#1e293b;">Rp0</span>
-        </div>
-        <button class="btn-primary" style="margin-top:16px;" onclick="checkoutFromCart()">Checkout</button>
-        <button class="btn-back slide-up" onclick="switchPage('simartPage', null)" style="margin-top:10px;">
-            ← Kembali ke SiMart
+
+        <label class="cart-select-all-row slide-up">
+            <span class="cart-checkbox-wrap">
+                <input type="checkbox" id="cartSelectAll" onchange="toggleSelectAllCart(this.checked)">
+                <span class="cart-checkbox-box"></span>
+                <span class="cart-select-all-label">Pilih Semua</span>
+            </span>
+            <span class="cart-select-count" id="cartSelectCount">0 produk</span>
+        </label>
+
+        <div id="cartItemsList" class="cart-items-list slide-up"></div>
+
+        <button class="cart-back-plain-btn slide-up" onclick="switchPage('simartPage', null)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 18l-6-6 6-6" stroke="#0868E3" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Kembali ke SiMart
         </button>
+
+        <div class="cart-bottom-bar" id="cartBottomBar">
+            <div class="cart-bottom-total">
+                <div class="cart-bottom-bag-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6h15l-1.5 9h-12z" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 6L5 3H2" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div>
+                    <div class="cart-bottom-total-price" id="cartTotalText">Rp0</div>
+                    <div class="cart-bottom-total-count" id="cartTotalCount">0 produk dipilih</div>
+                </div>
+            </div>
+            <button class="cart-checkout-btn" onclick="checkoutFromCart()">
+                Checkout
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- H1: Halaman Detail Pesanan -->
+    <div id="orderDetailPage" class="page-section" style="padding-top:16px;">
+        <div class="cart-header slide-up">
+            <button class="cart-back-btn" type="button" aria-label="Kembali" onclick="switchPage('sitrackPage', null)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 18l-6-6 6-6" stroke="#1e293b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="cart-header-text">
+                <div class="cart-header-title">Detail Pesanan</div>
+                <div class="cart-header-subtitle">Lihat status &amp; rincian pesananmu</div>
+            </div>
+        </div>
+
+        <div id="orderDetailEmpty" style="display:none;text-align:center;padding:48px 16px;color:#94a3b8;">
+            <div style="font-size:40px;margin-bottom:10px;">🧾</div>
+            <div style="font-size:14px;font-weight:600;">Belum ada pesanan</div>
+            <div style="font-size:12.5px;margin-top:4px;">Pesanan yang kamu buat di SiMart akan muncul di sini</div>
+        </div>
+
+        <div id="orderDetailContent">
+            <!-- Konfirmasi -->
+            <div class="order-card slide-up">
+                <div class="order-success-badge">✓ Pembayaran Berhasil</div>
+                <div class="order-thanks-title">Terima kasih, <span id="orderDetailNama">-</span>!</div>
+                <div class="order-thanks-desc">Pesananmu sudah kami terima dan segera diproses.</div>
+                <div class="order-number-row">
+                    <span class="order-number-label">No. Pesanan</span>
+                    <span class="order-number-value" id="orderDetailNumber">-</span>
+                    <button class="order-copy-btn" onclick="copyOrderNumber()" aria-label="Salin nomor pesanan">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="9" y="9" width="12" height="12" rx="2" stroke="#0868E3" stroke-width="1.8"/><path d="M5 15V5a2 2 0 0 1 2-2h10" stroke="#0868E3" stroke-width="1.8"/></svg>
+                    </button>
+                </div>
+                <div class="order-time-text">Dipesan pada <span id="orderDetailWaktu">-</span></div>
+            </div>
+
+            <!-- Status Pesanan -->
+            <div class="order-card slide-up">
+                <div class="order-card-title">Status Pesanan</div>
+                <div id="orderDetailTimeline" class="order-timeline"></div>
+            </div>
+
+            <!-- Detail Produk -->
+            <div class="order-card slide-up">
+                <div class="order-card-title">Detail Produk</div>
+                <div id="orderDetailItems" class="order-product-list"></div>
+            </div>
+
+            <!-- Ringkasan Pembayaran -->
+            <div class="order-card slide-up">
+                <div class="order-card-title">Ringkasan Pembayaran</div>
+                <div class="order-summary-row"><span>Subtotal</span><span id="orderDetailSubtotal">Rp0</span></div>
+                <div class="order-summary-row"><span>Ongkos Kirim</span><span id="orderDetailOngkir">Gratis</span></div>
+                <div class="order-summary-row total"><span>Total</span><span id="orderDetailTotal">Rp0</span></div>
+                <div class="order-secure-badge">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" stroke="#10b981" stroke-width="1.6"/><path d="M9 12l2 2 4-4" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Transaksi Aman &amp; Terenkripsi
+                </div>
+            </div>
+
+            <!-- Informasi Pengiriman -->
+            <div class="order-card slide-up">
+                <div class="order-card-title">Informasi Pengiriman</div>
+                <div class="order-shipping-name" id="orderDetailAlamatNama">-</div>
+                <div class="order-shipping-address" id="orderDetailAlamatText">-</div>
+            </div>
+
+            <button class="cart-back-outline-btn slide-up" onclick="showToast('Invoice akan segera dikirim ke email Anda', 'info')">
+                Lihat Invoice
+            </button>
+        </div>
     </div>
 
     <!-- Success Overlay (untuk animasi sukses pesan) -->
@@ -1481,14 +1677,19 @@
       </div>
     </div>
 
-    <!-- CLAIM MODAL -->
+    <!-- CLAIM MODAL (dipakai untuk Tukar Koin ke Uang) -->
     <div id="claimModal" class="claim-modal-overlay">
         <div class="claim-modal">
-            <div style="font-size:40px;text-align:center;margin-bottom:8px;">🏆</div>
-            <h3>Klaim Reward</h3>
-            <p>Masukkan data rekening untuk pencairan reward</p>
-            <div class="claim-info-row"><span class="claim-info-label">Level Anda</span><span class="claim-info-value" id="claimModalLevel">-</span></div>
-            <div class="claim-info-row"><span class="claim-info-label">Total Kontribusi</span><span class="claim-info-value" id="claimModalKg">0 kg</span></div>
+            <button class="claim-modal-close" type="button" aria-label="Tutup" onclick="closeClaimModal()">✕</button>
+            <div style="font-size:40px;text-align:center;margin-bottom:8px;">💰</div>
+            <h3>Tukar Koin ke Uang</h3>
+            <p>Masukkan jumlah koin & data rekening untuk pencairan</p>
+            <div class="claim-info-row"><span class="claim-info-label">Saldo Koin Tersedia</span><span class="claim-info-value" id="claimModalLevel">-</span></div>
+            <div class="claim-info-row"><span class="claim-info-label">Estimasi Nilai Rupiah</span><span class="claim-info-value" id="claimModalKg">Rp0</span></div>
+            <div class="claim-form-group">
+                <label>Jumlah Koin Ditukar <span style="color:#ef4444">*</span></label>
+                <input type="tel" id="claimJumlahKoin" placeholder="Contoh: 50" inputmode="numeric">
+            </div>
             <div class="claim-form-group">
                 <label>Bank / E-Wallet <span style="color:#ef4444">*</span></label>
                 <select id="claimBank">
@@ -1542,25 +1743,25 @@
   <div class="bottom-nav-wrapper"><nav class="bottom-nav">
      <button class="nav-item" onclick="animatedSwitchPage('newsPage', this)">
         <svg class="nav-icon-svg nav-icon-news" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h4"/></svg>
-        <div class="nav-label">News</div>
+        <span class="nav-label">News</span>
     </button>
     <button class="nav-item" onclick="animatedSwitchPage('simartPage', this)">
         <svg class="nav-icon-svg nav-icon-toko" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>
-        <div class="nav-label">Toko</div>
+        <span class="nav-label">Toko</span>
     </button>
     <div class="nav-spacer"></div>
     <button class="nav-item" onclick="animatedSwitchPage('sipickPage', this)">
         <svg class="nav-icon-svg nav-icon-jemput" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-        <div class="nav-label">Jemput</div>
+        <span class="nav-label">Jemput</span>
     </button>
    <button class="nav-item" onclick="animatedSwitchPage('sitrackPage', this)">
         <svg class="nav-icon-svg nav-icon-lacak" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        <div class="nav-label">Lacak</div>
+        <span class="nav-label">Lacak</span>
     </button>
 </nav>
 <button class="nav-item nav-home active" onclick="animatedSwitchPage('homePage', this)">
     <svg class="nav-icon-svg nav-icon-home" viewBox="0 0 24 24"><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/></svg>
-    <div class="nav-label">Home</div>
+    <span class="nav-label">Home</span>
 </button>
 </div>
 </div>
@@ -1631,7 +1832,6 @@
                             <th>Toko</th>
                             <th>Berat (kg)</th>
                             <th>Status</th>
-                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1699,7 +1899,6 @@
                             <th>Produk</th>
                             <th>Jumlah</th>
                             <th>Status</th>
-                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1766,9 +1965,37 @@
                         <label style="display:block;font-size:13px;font-weight:600;color:#1e293b;margin-bottom:6px;">Harga (angka saja, tanpa titik/koma)</label>
                         <input type="number" id="productFormHarga" placeholder="Contoh: 10000" style="width:100%;padding:11px 13px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;">
                     </div>
-                    <div>
-                        <label style="display:block;font-size:13px;font-weight:600;color:#1e293b;margin-bottom:6px;">Link Foto Produk</label>
-                        <input type="text" id="productFormGambar" placeholder="https://i.imgur.com/xxxx.jpeg" style="width:100%;padding:11px 13px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;">
+                   <div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:#1e293b;margin-bottom:6px;">Foto Produk</label>
+                       
+					   <div class="admin-photo-dropzone" id="productFormGambarDropzone">
+                            <input type="text" class="admin-photo-paste-catcher" id="productFormGambarPasteCatcher">
+                            <img id="productFormGambarPreview" class="admin-photo-preview" style="display:none;" alt="Preview foto produk">
+							
+                            <div id="productFormGambarPlaceholder">
+                                <div class="admin-photo-dropzone-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 40 40">
+	<path d="M0 0h40v40H0z" fill="none" />
+	<g fill="none">
+		<g stroke="#00034a" stroke-miterlimit="10" clip-path="url(#SVGw9scfcdR)">
+			<path fill="#00034a" d="M35.285 2.425C31.845.747 24.312.5 19.536.5C13.68.5 3.673.871 2.16 3.8C.646 5.264.5 13.074.5 19.536c0 4.997.088 10.799.827 13.85c.458 1.895 1.794 3.465 3.584 4.269c3.531 1.586 10.854 1.823 15.53 1.823c5.858 0 15.864-.371 17.377-3.3c1.513-1.464 1.66-9.274 1.66-15.736c0-5.031-.089-10.878-.842-13.913c-.442-1.78-1.692-3.295-3.351-4.104Z" />
+			<path fill="#0868e3" d="M36.913 3.8C35.4.87 25.393.5 19.536.5S3.673.871 2.16 3.8C.646 5.264.5 13.074.5 19.536C.5 26 .646 33.81 2.16 35.273c1.513 2.928 11.519 3.3 17.376 3.3s15.864-.372 17.377-3.3c1.513-1.465 1.66-9.274 1.66-15.737c0-6.462-.147-14.272-1.66-15.736Z" />
+			<path fill="#fff" d="M33.203 7.949c-1.2-1.777-9.079-2.011-13.667-2.011S7.07 6.172 5.869 7.948c-1.171.85-1.288 5.623-1.288 9.548s.117 8.669 1.288 9.557c1.181 1.777 9.06 2.001 13.667 2.001c4.608 0 12.466-.224 13.667-2.001c1.191-.888 1.308-5.633 1.308-9.557s-.136-8.698-1.308-9.547Z" />
+			<path fill="#0868e3" d="M26.887 15.631a20.3 20.3 0 0 0-3.143-4.1a2.17 2.17 0 0 0-2.822 0a20.7 20.7 0 0 0-3.133 4.1q-.179.294-.342.596q-.601-.883-1.376-1.62a1.62 1.62 0 0 0-2.1 0a15 15 0 0 0-2.342 3.065c-.244.41-1.61 2.772-1.61 3.983a1.51 1.51 0 0 0 1.092 1.522c1.406.606 14.644.654 16.47-.146a2.03 2.03 0 0 0 1.463-2.02c0-.108.254-1.358-2.157-5.38Z" />
+		</g>
+		<defs>
+			<clipPath id="SVGw9scfcdR">
+				<path fill="#fff" d="M0 0h40v40H0z" />
+			</clipPath>
+		</defs>
+	</g>
+</svg></div>
+                                <div class="admin-photo-dropzone-text">Seret & lepas foto di sini</div>
+                                <div class="admin-photo-dropzone-sub">atau tempel (Ctrl+V) — JPG/PNG/WEBP, maks 5MB</div>
+                                <button type="button" class="admin-photo-dropzone-btn">Pilih File</button>
+                            </div>
+                        </div>
+                        <input type="file" id="productFormGambarFile" accept="image/*" class="admin-photo-input">
+                        <input type="hidden" id="productFormGambar" value="">
                     </div>
                     <div>
                         <label style="display:block;font-size:13px;font-weight:600;color:#1e293b;margin-bottom:6px;">Kategori</label>
@@ -1825,9 +2052,36 @@
                         <input type="text" id="bannerFormSubjudul" placeholder="Contoh: Belanja mudah, ramah lingkungan." style="width:100%;padding:11px 13px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;">
                     </div>
                     <div>
-                        <label style="display:block;font-size:13px;font-weight:600;color:#1e293b;margin-bottom:6px;">Link Gambar Banner</label>
-                        <input type="text" id="bannerFormGambar" placeholder="https://i.imgur.com/xxxx.jpeg" style="width:100%;padding:11px 13px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;">
+                        <label style="display:block;font-size:13px;font-weight:600;color:#1e293b;margin-bottom:6px;">Gambar Banner</label>
+                       <div class="admin-photo-dropzone" id="bannerFormGambarDropzone">
+                            <input type="text" class="admin-photo-paste-catcher" id="bannerFormGambarPasteCatcher">
+                            <img id="bannerFormGambarPreview" class="admin-photo-preview" style="display:none;" alt="Preview banner">
+                            <div id="bannerFormGambarPlaceholder">
+                                <div class="admin-photo-dropzone-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 40 40">
+	<path d="M0 0h40v40H0z" fill="none" />
+	<g fill="none">
+		<g stroke="#00034a" stroke-miterlimit="10" clip-path="url(#SVGw9scfcdR)">
+			<path fill="#00034a" d="M35.285 2.425C31.845.747 24.312.5 19.536.5C13.68.5 3.673.871 2.16 3.8C.646 5.264.5 13.074.5 19.536c0 4.997.088 10.799.827 13.85c.458 1.895 1.794 3.465 3.584 4.269c3.531 1.586 10.854 1.823 15.53 1.823c5.858 0 15.864-.371 17.377-3.3c1.513-1.464 1.66-9.274 1.66-15.736c0-5.031-.089-10.878-.842-13.913c-.442-1.78-1.692-3.295-3.351-4.104Z" />
+			<path fill="#0868e3" d="M36.913 3.8C35.4.87 25.393.5 19.536.5S3.673.871 2.16 3.8C.646 5.264.5 13.074.5 19.536C.5 26 .646 33.81 2.16 35.273c1.513 2.928 11.519 3.3 17.376 3.3s15.864-.372 17.377-3.3c1.513-1.465 1.66-9.274 1.66-15.737c0-6.462-.147-14.272-1.66-15.736Z" />
+			<path fill="#fff" d="M33.203 7.949c-1.2-1.777-9.079-2.011-13.667-2.011S7.07 6.172 5.869 7.948c-1.171.85-1.288 5.623-1.288 9.548s.117 8.669 1.288 9.557c1.181 1.777 9.06 2.001 13.667 2.001c4.608 0 12.466-.224 13.667-2.001c1.191-.888 1.308-5.633 1.308-9.557s-.136-8.698-1.308-9.547Z" />
+			<path fill="#0868e3" d="M26.887 15.631a20.3 20.3 0 0 0-3.143-4.1a2.17 2.17 0 0 0-2.822 0a20.7 20.7 0 0 0-3.133 4.1q-.179.294-.342.596q-.601-.883-1.376-1.62a1.62 1.62 0 0 0-2.1 0a15 15 0 0 0-2.342 3.065c-.244.41-1.61 2.772-1.61 3.983a1.51 1.51 0 0 0 1.092 1.522c1.406.606 14.644.654 16.47-.146a2.03 2.03 0 0 0 1.463-2.02c0-.108.254-1.358-2.157-5.38Z" />
+		</g>
+		<defs>
+			<clipPath id="SVGw9scfcdR">
+				<path fill="#fff" d="M0 0h40v40H0z" />
+			</clipPath>
+		</defs>
+	</g>
+</svg></div>
+                                <div class="admin-photo-dropzone-text">Seret & lepas foto di sini</div>
+                                <div class="admin-photo-dropzone-sub">atau tempel (Ctrl+V) — JPG/PNG/WEBP, maks 5MB</div>
+                                <button type="button" class="admin-photo-dropzone-btn">Pilih File</button>
+                            </div>
+                        </div>
+                        <input type="file" id="bannerFormGambarFile" accept="image/*" class="admin-photo-input">
+                        <input type="hidden" id="bannerFormGambar" value="">
                     </div>
+					
                     <input type="hidden" id="bannerFormId" value="">
                     <button class="admin-reload-btn" id="bannerSubmitBtn" onclick="submitBannerAdmin()" style="width:fit-content;">+ Tambah Banner</button>
                 </div>
@@ -1847,7 +2101,22 @@
                 </table>
             </div>
             <div class="empty-state" id="bannersEmpty">
-                <div class="empty-state-icon">🖼️</div>
+                <div class="empty-state-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 40 40">
+	<path d="M0 0h40v40H0z" fill="none" />
+	<g fill="none">
+		<g stroke="#00034a" stroke-miterlimit="10" clip-path="url(#SVGw9scfcdR)">
+			<path fill="#00034a" d="M35.285 2.425C31.845.747 24.312.5 19.536.5C13.68.5 3.673.871 2.16 3.8C.646 5.264.5 13.074.5 19.536c0 4.997.088 10.799.827 13.85c.458 1.895 1.794 3.465 3.584 4.269c3.531 1.586 10.854 1.823 15.53 1.823c5.858 0 15.864-.371 17.377-3.3c1.513-1.464 1.66-9.274 1.66-15.736c0-5.031-.089-10.878-.842-13.913c-.442-1.78-1.692-3.295-3.351-4.104Z" />
+			<path fill="#0868e3" d="M36.913 3.8C35.4.87 25.393.5 19.536.5S3.673.871 2.16 3.8C.646 5.264.5 13.074.5 19.536C.5 26 .646 33.81 2.16 35.273c1.513 2.928 11.519 3.3 17.376 3.3s15.864-.372 17.377-3.3c1.513-1.465 1.66-9.274 1.66-15.737c0-6.462-.147-14.272-1.66-15.736Z" />
+			<path fill="#fff" d="M33.203 7.949c-1.2-1.777-9.079-2.011-13.667-2.011S7.07 6.172 5.869 7.948c-1.171.85-1.288 5.623-1.288 9.548s.117 8.669 1.288 9.557c1.181 1.777 9.06 2.001 13.667 2.001c4.608 0 12.466-.224 13.667-2.001c1.191-.888 1.308-5.633 1.308-9.557s-.136-8.698-1.308-9.547Z" />
+			<path fill="#0868e3" d="M26.887 15.631a20.3 20.3 0 0 0-3.143-4.1a2.17 2.17 0 0 0-2.822 0a20.7 20.7 0 0 0-3.133 4.1q-.179.294-.342.596q-.601-.883-1.376-1.62a1.62 1.62 0 0 0-2.1 0a15 15 0 0 0-2.342 3.065c-.244.41-1.61 2.772-1.61 3.983a1.51 1.51 0 0 0 1.092 1.522c1.406.606 14.644.654 16.47-.146a2.03 2.03 0 0 0 1.463-2.02c0-.108.254-1.358-2.157-5.38Z" />
+		</g>
+		<defs>
+			<clipPath id="SVGw9scfcdR">
+				<path fill="#fff" d="M0 0h40v40H0z" />
+			</clipPath>
+		</defs>
+	</g>
+</svg></div>
                 <h3>Belum Ada Banner</h3>
                 <p>Tambahkan banner pertama menggunakan form di atas</p>
             </div>
@@ -1870,9 +2139,36 @@
                         <label style="display:block;font-size:13px;font-weight:600;color:#1e293b;margin-bottom:6px;">Isi Berita</label>
                         <textarea id="newsFormContent" rows="5" placeholder="Tulis isi berita di sini..." style="width:100%;padding:11px 13px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:inherit;resize:vertical;"></textarea>
                     </div>
-                    <div>
-                        <label style="display:block;font-size:13px;font-weight:600;color:#1e293b;margin-bottom:6px;">Link Foto Berita</label>
-                        <input type="text" id="newsFormGambar" placeholder="https://i.imgur.com/xxxx.jpeg" style="width:100%;padding:11px 13px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;">
+                    
+					<div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:#1e293b;margin-bottom:6px;">Foto Berita</label>
+						<div class="admin-photo-dropzone" id="newsFormGambarDropzone">
+                            <input type="text" class="admin-photo-paste-catcher" id="newsFormGambarPasteCatcher">
+                            <img id="newsFormGambarPreview" class="admin-photo-preview" style="display:none;" alt="Preview berita">
+                            <div id="newsFormGambarPlaceholder">
+                                <div class="admin-photo-dropzone-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 40 40">
+	<path d="M0 0h40v40H0z" fill="none" />
+	<g fill="none">
+		<g stroke="#00034a" stroke-miterlimit="10" clip-path="url(#SVGw9scfcdR)">
+			<path fill="#00034a" d="M35.285 2.425C31.845.747 24.312.5 19.536.5C13.68.5 3.673.871 2.16 3.8C.646 5.264.5 13.074.5 19.536c0 4.997.088 10.799.827 13.85c.458 1.895 1.794 3.465 3.584 4.269c3.531 1.586 10.854 1.823 15.53 1.823c5.858 0 15.864-.371 17.377-3.3c1.513-1.464 1.66-9.274 1.66-15.736c0-5.031-.089-10.878-.842-13.913c-.442-1.78-1.692-3.295-3.351-4.104Z" />
+			<path fill="#0868e3" d="M36.913 3.8C35.4.87 25.393.5 19.536.5S3.673.871 2.16 3.8C.646 5.264.5 13.074.5 19.536C.5 26 .646 33.81 2.16 35.273c1.513 2.928 11.519 3.3 17.376 3.3s15.864-.372 17.377-3.3c1.513-1.465 1.66-9.274 1.66-15.737c0-6.462-.147-14.272-1.66-15.736Z" />
+			<path fill="#fff" d="M33.203 7.949c-1.2-1.777-9.079-2.011-13.667-2.011S7.07 6.172 5.869 7.948c-1.171.85-1.288 5.623-1.288 9.548s.117 8.669 1.288 9.557c1.181 1.777 9.06 2.001 13.667 2.001c4.608 0 12.466-.224 13.667-2.001c1.191-.888 1.308-5.633 1.308-9.557s-.136-8.698-1.308-9.547Z" />
+			<path fill="#0868e3" d="M26.887 15.631a20.3 20.3 0 0 0-3.143-4.1a2.17 2.17 0 0 0-2.822 0a20.7 20.7 0 0 0-3.133 4.1q-.179.294-.342.596q-.601-.883-1.376-1.62a1.62 1.62 0 0 0-2.1 0a15 15 0 0 0-2.342 3.065c-.244.41-1.61 2.772-1.61 3.983a1.51 1.51 0 0 0 1.092 1.522c1.406.606 14.644.654 16.47-.146a2.03 2.03 0 0 0 1.463-2.02c0-.108.254-1.358-2.157-5.38Z" />
+		</g>
+		<defs>
+			<clipPath id="SVGw9scfcdR">
+				<path fill="#fff" d="M0 0h40v40H0z" />
+			</clipPath>
+		</defs>
+	</g>
+</svg></div>
+                                <div class="admin-photo-dropzone-text">Seret & lepas foto di sini</div>
+                                <div class="admin-photo-dropzone-sub">atau tempel (Ctrl+V) — JPG/PNG/WEBP, maks 5MB</div>
+                                <button type="button" class="admin-photo-dropzone-btn">Pilih File</button>
+                            </div>
+                        </div>
+                        <input type="file" id="newsFormGambarFile" accept="image/*" class="admin-photo-input">
+                        <input type="hidden" id="newsFormGambar" value="">
                     </div>
 		    <div>
     <label style="display:block;font-size:13px;font-weight:600;color:#1e293b;margin-bottom:6px;">Kategori</label>
@@ -1888,7 +2184,7 @@
     <input type="checkbox" id="newsFormIsTop" style="width:18px;height:18px;">
     <label for="newsFormIsTop" style="font-size:13px;font-weight:600;color:#1e293b;">Jadikan Top Berita</label>
 </div>
-                    <button class="admin-reload-btn" onclick="submitNewsAdmin()" style="width:fit-content;">+ Tambah Berita</button>
+                    <button class="admin-reload-btn" id="newsSubmitBtn" onclick="submitNewsAdmin()" style="width:fit-content;">+ Tambah Berita</button>
                 </div>
             </div>
 

@@ -264,7 +264,18 @@
         // ============================================================
         // APPS SCRIPT URL
         // ============================================================
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztRzZU7zmAE-KcNUZMOcs1a1plk3ZPIa-HStcjrR8ayVEdC9l7uDKH-JQvKZKFzwoR/exec";
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVlpZN6_7RxbXSFh5jtcifLkpZty34co0K6b6Zzuv9bonYdba9SK1Tm0uaI0KE9ty7/exec";
+
+        // FIX: konversi URL Google Drive (format lama ATAU baru) jadi format
+        // lh3.googleusercontent.com yang stabil dipakai untuk <img src>.
+        // Berlaku juga untuk data lama yang masih tersimpan pakai format
+        // uc?export=view di Sheets — jadi nggak perlu upload ulang.
+        function toDriveImageUrl(url) {
+            if (!url) return url;
+            var match = String(url).match(/[-\w]{25,}/); // ambil file ID Google Drive
+            if (!match) return url;
+            return 'https://lh3.googleusercontent.com/d/' + match[0] + '=w1000';
+        }
 
         // ============================================================
         // TOAST NOTIFICATION
@@ -358,35 +369,38 @@ function getLevelBadgeSVG(levelName) {
         // ============================================================
         // STATUS NORMALIZE HELPERS
         // ============================================================
-        function normalizeStatus(s) {
-	if (!s && s !== 0) return '';
-            s = String(s).toLowerCase().trim();
-            const map = {
-                'dijadwalkan':'scheduled', 'scheduled':'scheduled',
-                'dijemput':'picked',       'picked':'picked',
-                'diproses':'processed',    'processed':'processed',
-                'selesai':'completed',     'completed':'completed'
-            };
-            return map[s] || s;
-        }
+        // C12: normalizeStatus() dipindah — cuma didefinisikan SEKALI di bawah
+        // (dekat bagian admin, ±2750), karena versi itu yang paling lengkap
+        // (support 'dibatalkan'/'cancelled'). Function declaration tetap bisa
+        // diakses dari sini (customer section) berkat hoisting.
         function sheetStatusFromClient(s) {
 	if (!s && s !== 0) return '';
             s = String(s).toLowerCase().trim();
             const map = { 'scheduled':'dijadwalkan','picked':'dijemput','processed':'diproses','completed':'selesai','cancelled':'dibatalkan' };
             return map[s] || s;
         }
+        // BATCH2 #18: satu sumber kebenaran untuk sistem level — dipakai bareng
+        // oleh computeLevel() (badge Home) DAN updateRewardPage() (card Level
+        // Kontribusi), supaya angka koin yang sama selalu menghasilkan level yang sama.
+        const LEVEL_TABLE = [
+            { name:'Perunggu',      min:1,    next:50,   nextName:'Silver',       canClaimMin:1 },
+            { name:'Silver',        min:50,   next:150,  nextName:'Emas',         canClaimMin:50 },
+            { name:'Emas',          min:150,  next:250,  nextName:'Platinum',     canClaimMin:150 },
+            { name:'Platinum',      min:250,  next:400,  nextName:'Diamond',      canClaimMin:250 },
+            { name:'Diamond',       min:400,  next:600,  nextName:'Emerald',      canClaimMin:400 },
+            { name:'Emerald',       min:600,  next:900,  nextName:'Ruby',         canClaimMin:600 },
+            { name:'Ruby',          min:900,  next:1300, nextName:'Sapphire',     canClaimMin:900 },
+            { name:'Sapphire',      min:1300, next:1800, nextName:'Master',       canClaimMin:1300 },
+            { name:'Master',        min:1800, next:2500, nextName:'Grandmaster',  canClaimMin:1800 },
+            { name:'Grandmaster',   min:2500, next:9999, nextName:'Grandmaster',  canClaimMin:2500 }
+        ];
+
         function computeLevel(total) {
-    if (total >= 1000000) return 'Grandmaster';
-    if (total >= 500000)  return 'Master';
-    if (total >= 350000)  return 'Sapphire';
-    if (total >= 200000)  return 'Ruby';
-    if (total >= 100000)  return 'Emerald';
-    if (total >= 60000)   return 'Diamond';
-    if (total >= 30000)   return 'Platinum';
-    if (total >= 15000)   return 'Emas';
-    if (total >= 5000)    return 'Silver';
-    if (total > 0)         return 'Perunggu';
-    return 'Belum Ada Level';
+    let result = 'Belum Ada Level';
+    for (let i = 0; i < LEVEL_TABLE.length; i++) {
+        if (total >= LEVEL_TABLE[i].min) result = LEVEL_TABLE[i].name;
+    }
+    return result;
 }
 
         // ============================================================
@@ -602,14 +616,18 @@ function getLevelBadgeSVG(levelName) {
     loadBannersToSimart();
     loadNewsFromServer();
             syncPickupStatusWithServer();
-            syncPickupStatusWithServer();
             fetchCustomerTotalFromServer();
             syncOrderStatusFromServer();
+            // 🔧 FIX LAG: interval polling sebelumnya 5 detik untuk DUA fungsi
+            // sekaligus (jadi tiap ~2.5 detik ada request ke server terus-menerus
+            // selama app dibuka). Dinaikkan ke 15 detik — tetap terasa "real-time"
+            // untuk update status pesanan/penjemputan, tapi jauh lebih ringan ke
+            // jaringan & baterai, dan mengurangi jank karena render ulang terus-menerus.
             if (!window.sisaPickupSyncInterval) {
-                window.sisaPickupSyncInterval = setInterval(syncPickupStatusWithServer, 5000);
+                window.sisaPickupSyncInterval = setInterval(syncPickupStatusWithServer, 15000);
             }
             if (!window.sisaOrderSyncInterval) {
-                window.sisaOrderSyncInterval = setInterval(syncOrderStatusFromServer, 5000);
+                window.sisaOrderSyncInterval = setInterval(syncOrderStatusFromServer, 15000);
             }
             // Refresh total limbah dari server setiap 60 detik
            if (!window.sisaCustomerTotalInterval) {
@@ -874,12 +892,72 @@ function getLevelBadgeSVG(levelName) {
         }
 
         // ============================================================
-        // UPDATE STATS
+        // BATCH2 #1: LINE CHART "Total Kg" HARIAN (7 hari terakhir) (Home dashboard)
+        // Asumsi: rentang default 7 hari terakhir (belum ditentukan user)
         // ============================================================
+        const HOME_CHART_DAY_LABELS = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+        const HOME_CHART_DAYS = 7;
+
+        function renderHomeChart(history) {
+            const wrap = document.getElementById('homeChartBars');
+            if (!wrap) return;
+
+            const now = new Date();
+            const buckets = [];
+            for (let i = HOME_CHART_DAYS - 1; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+                buckets.push({ date: d, kg: 0 });
+            }
+
+            history.forEach(item => {
+                const d = new Date(item.completedAt || item.date);
+                const bucket = buckets.find(b =>
+                    b.date.getFullYear() === d.getFullYear() &&
+                    b.date.getMonth() === d.getMonth() &&
+                    b.date.getDate() === d.getDate()
+                );
+                if (bucket) bucket.kg += Number(item.weight) || 0;
+            });
+
+            const width = 300, height = 90, padX = 12, padY = 12;
+            const maxKg = Math.max(1, ...buckets.map(b => b.kg));
+            const stepX = (width - padX * 2) / (buckets.length - 1);
+
+            const points = buckets.map((b, i) => {
+                const x = padX + i * stepX;
+                const y = height - padY - ((b.kg / maxKg) * (height - padY * 2));
+                return { x, y, kg: b.kg, date: b.date };
+            });
+
+            const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+            const lastX = points[points.length - 1].x.toFixed(1);
+            const firstX = points[0].x.toFixed(1);
+            const areaPath = `${linePath} L${lastX},${(height - padY).toFixed(1)} L${firstX},${(height - padY).toFixed(1)} Z`;
+
+            const dots = points.map((p, i) => {
+                const isToday = i === points.length - 1;
+                return `<circle class="home-chart-line-dot${isToday ? ' current' : ''}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${isToday ? 4 : 3}"><title>${p.kg} kg</title></circle>`;
+            }).join('');
+
+            const labels = points.map(p => {
+                const leftPct = (p.x / width) * 100;
+                return `<div class="home-chart-line-label" style="left:${leftPct.toFixed(1)}%">${HOME_CHART_DAY_LABELS[p.date.getDay()]}</div>`;
+            }).join('');
+
+            wrap.innerHTML = `
+                <svg class="home-chart-line-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+                    <path class="home-chart-line-area" d="${areaPath}"></path>
+                    <path class="home-chart-line-path" d="${linePath}"></path>
+                    ${dots}
+                </svg>
+                <div class="home-chart-line-labels">${labels}</div>
+            `;
+        }
+
        function updateStats() {
     const history = getPickupHistory();
     const totalKg   = history.reduce((sum, item) => sum + (Number(item.weight) || 0), 0);   // ← nama diganti totalKg
-    const totalKoin = history.reduce((sum, item) => sum + (item.koin != null ? Number(item.koin) : kgToKoin(item.category || 'organik', item.weight)), 0);  // ← BARU
+    const totalKoin = getSaldoKoinTersedia();  // BATCH2 #12: pakai saldo real-time (sudah dikurangi yang ditukar), sama sumber dengan halaman Reward & modal klaim
 
 const el = document.getElementById('totalWaste');
     if (el) el.textContent = totalKoin;   // ← pakai totalKoin, bukan total lagi
@@ -899,6 +977,8 @@ const el = document.getElementById('totalWaste');
     const mkEl = document.getElementById('monthlyKg');
     if (mpEl) mpEl.textContent = monthly.length;
     if (mkEl) mkEl.textContent = monthly.reduce((s, i) => s + (Number(i.weight) || 0), 0);
+
+    renderHomeChart(history);
 
     const impactCarbon     = document.getElementById('impactCarbon');
     const impactTrees      = document.getElementById('impactTrees');
@@ -973,7 +1053,7 @@ const el = document.getElementById('totalWaste');
             const activeIndex = { scheduled: 1, picked: 2, processed: 3, completed: 4 }[st] || 0;
             for (let i = 1; i <= activeIndex; i++) {
                 const key = stepIconKeys[i - 1];
-                const iconColor = (i === activeIndex) ? statusMap[st].bg : '#22C55E';
+                const iconColor = '#ffffff';
                 const iconSlot = document.getElementById('stepIcon' + i);
                 if (iconSlot) iconSlot.innerHTML = svgIcons[key](iconColor);
             }
@@ -1019,14 +1099,17 @@ const el = document.getElementById('totalWaste');
             const activePickup  = getActivePickup();
             const cancelSection = document.getElementById('cancelPickupSection');
             const btnSelesai    = document.getElementById('btnSelesaiPickup');
+            const btnLihatStatus = document.getElementById('lihatStatusPenjemputanBtn');
             if (!activePickup) {
                 cancelSection.style.display = 'none';
                 if (btnSelesai) btnSelesai.style.display = 'none';
+                if (btnLihatStatus) btnLihatStatus.style.display = 'none';
                 return;
             }
             const st = normalizeStatus(activePickup.status || 'scheduled');
             cancelSection.style.display = (st === 'scheduled') ? 'block' : 'none';
             if (btnSelesai) btnSelesai.style.display = (st === 'completed') ? 'block' : 'none';
+            if (btnLihatStatus) btnLihatStatus.style.display = 'block';
         }
 // ============================================================
         // RESET CARD SETELAH SELESAI (manual via tombol / otomatis 1 jam)
@@ -1213,7 +1296,12 @@ function closeWasteDetail(e) {
 
 		const SWIPE_PAGES = ['newsPage', 'simartPage', 'homePage', 'sipickPage', 'sitrackPage'];
 
-        function switchPage(pageId, navItem) {
+        // C1: kurva easing & durasi disamakan di seluruh transisi (drag-release & tap-nav)
+        // supaya "rasa"-nya konsisten mirip WhatsApp (snappy, sedikit decelerate di akhir).
+        const SWIPE_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
+        const SWIPE_DURATION_MS = 260;
+
+        function _switchPageImmediate(pageId, navItem) {
             document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1229,8 +1317,9 @@ function closeWasteDetail(e) {
                 setTimeout(() => loadMyOrders(null), 200);
 		loadBannersToSimart();
             }
-           // Saat buka Home: refresh status pesanan terakhir
+           // Saat buka Home: refresh status pesanan terakhir & koin
             if (pageId === 'homePage') {
+                updateStats();
                 setTimeout(() => syncOrderStatusFromServer(), 300);
             }
             // Saat buka SiTrack: refresh status penjemputan & daftar pesanan
@@ -1257,157 +1346,80 @@ function closeWasteDetail(e) {
                 openNotifPanel();
             }
         }
-		
-		(function initSwipeNav() {
-    const container = document.querySelector('#customerView .container');
-    if (!container) return;
 
-    let touchStartX = 0, touchStartY = 0;
-    let dragging = false, horizontalLock = null, direction = 0;
-    let currentEl = null, targetEl = null, targetId = null;
-    let containerWidth = 0, rafId = null, pendingDelta = 0;
+        // C1 (0.2 - revisi): SEMUA perpindahan halaman (tap bottom-nav, tombol
+        // kembali, kartu, menu, dsb) sekarang lewat sini dan otomatis dapat
+        // cross-fade opacity yang halus — bukan potongan instan lagi.
+        // Jalur swipe jari antar-halaman (dulu initSwipeNav) sudah DIHAPUS
+        // sesuai permintaan; satu-satunya cara pindah halaman sekarang lewat
+        // tap, dan semuanya konsisten fade.
+        const NAV_FADE_DURATION_MS = 220;
+        const NAV_FADE_EASING = 'ease-in-out';
 
-    function prepareTarget(id, dir) {
-        const el = document.getElementById(id);
-        if (!el) return null;
-        el.classList.add('swipe-preview');
-        el.style.display = 'block';
-        el.style.transition = '';
-        el.style.transform = `translateX(${dir > 0 ? containerWidth : -containerWidth}px)`;
-        return el;
-    }
+        function switchPage(pageId, navItem) {
+            const activePage = document.querySelector('.page-section.active');
+            const targetEl = document.getElementById(pageId);
 
-    function applyTransforms(deltaX) {
-        if (currentEl) currentEl.style.transform = `translateX(${deltaX}px)`;
-        if (targetEl) {
-            const base = direction > 0 ? containerWidth : -containerWidth;
-            targetEl.style.transform = `translateX(${base + deltaX}px)`;
-        }
-    }
-
-    function cleanup(keepEl) {
-        [currentEl, targetEl].forEach(el => {
-            if (!el) return;
-            el.style.transition = '';
-            el.style.transform = '';
-            el.classList.remove('swipe-preview');
-            if (el !== keepEl) el.style.display = '';
-        });
-        currentEl = null; targetEl = null; targetId = null; direction = 0;
-    }
-
-    container.addEventListener('touchstart', function(e) {
-        if (e.target.closest('.banner-container, .no-swipe')) { horizontalLock = false; return; }
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-        dragging = true;
-        horizontalLock = null;
-        containerWidth = container.clientWidth;
-    }, { passive: true });
-
-    container.addEventListener('touchmove', function(e) {
-        if (!dragging) return;
-        const curX = e.touches[0].clientX;
-        const curY = e.touches[0].clientY;
-        const deltaX = curX - touchStartX;
-        const deltaY = curY - touchStartY;
-
-        if (horizontalLock === null) {
-            if (Math.abs(deltaX) < 8 && Math.abs(deltaY) < 8) return;
-            horizontalLock = Math.abs(deltaX) > Math.abs(deltaY);
-            if (horizontalLock) {
-                const activePage = document.querySelector('.page-section.active');
-                const currentIndex = activePage ? SWIPE_PAGES.indexOf(activePage.id) : -1;
-                if (currentIndex === -1) { horizontalLock = false; return; }
-                direction = deltaX < 0 ? 1 : -1; // 1 = geser ke kiri (next), -1 = geser ke kanan (prev)
-                const targetIndex = currentIndex + direction;
-                if (targetIndex < 0 || targetIndex >= SWIPE_PAGES.length) { horizontalLock = false; return; }
-                currentEl = activePage;
-                targetId = SWIPE_PAGES[targetIndex];
-                targetEl = prepareTarget(targetId, direction);
-                currentEl.style.transition = '';
+            if (!activePage || activePage.id === pageId || !targetEl) {
+                _switchPageImmediate(pageId, navItem);
+                return;
             }
-        }
-        if (!horizontalLock) return;
 
-        e.preventDefault();
-        pendingDelta = deltaX;
-        if (rafId) return;
-        rafId = requestAnimationFrame(() => { applyTransforms(pendingDelta); rafId = null; });
-    }, { passive: false });
+            // Bersihkan sisa halaman lain yang mungkin masih "nyangkut" dari
+            // animasi sebelumnya (mis. user tap cepat berkali-kali).
+            document.querySelectorAll('.page-section.fade-preview').forEach(el => {
+                el.style.transition = '';
+                el.style.opacity = '';
+                el.classList.remove('fade-preview');
+            });
 
-    container.addEventListener('touchend', function(e) {
-        if (!dragging) return;
-        dragging = false;
-        if (!horizontalLock || !currentEl) { horizontalLock = null; return; }
+            // C3: fade sekarang SEKUENSIAL (fade-out dulu, baru swap+fade-in) —
+            // bukan lagi dua halaman ditumpuk pakai position:absolute. Ini
+            // menghindari reflow kasar yang kerasa kayak "zoom in" saat dua
+            // halaman berbeda tinggi saling overlap.
+            const HALF_MS = NAV_FADE_DURATION_MS / 2;
 
-        const deltaX = e.changedTouches[0].clientX - touchStartX;
-        const passedThreshold = Math.abs(deltaX) > containerWidth * 0.35;
-        const finalCurrent = currentEl, finalTarget = targetEl, finalTargetId = targetId, dir = direction;
+            activePage.classList.add('fade-preview');
+            activePage.style.transition = '';
+            activePage.style.opacity = '1';
+            void activePage.offsetWidth; // force reflow
 
-        finalCurrent.style.transition = 'transform 0.25s ease';
-        if (finalTarget) finalTarget.style.transition = 'transform 0.25s ease';
+            requestAnimationFrame(() => {
+                activePage.style.transition = `opacity ${HALF_MS}ms ${NAV_FADE_EASING}`;
+                activePage.style.opacity = '0';
+            });
 
-        if (passedThreshold && finalTarget) {
-            finalCurrent.style.transform = `translateX(${dir > 0 ? -containerWidth : containerWidth}px)`;
-            finalTarget.style.transform = 'translateX(0px)';
             setTimeout(() => {
-                const navBtn = document.querySelector(`.nav-item[onclick*="${finalTargetId}"]`);
-                switchPage(finalTargetId, navBtn);
-                cleanup(document.getElementById(finalTargetId));
-            }, 250);
-        } else {
-            finalCurrent.style.transform = 'translateX(0px)';
-            if (finalTarget) finalTarget.style.transform = `translateX(${dir > 0 ? containerWidth : -containerWidth}px)`;
-            setTimeout(() => cleanup(finalCurrent), 250);
+                activePage.style.transition = '';
+                activePage.style.opacity = '';
+                activePage.classList.remove('fade-preview');
+
+                _switchPageImmediate(pageId, navItem);
+
+                targetEl.classList.add('fade-preview');
+                targetEl.style.transition = '';
+                targetEl.style.opacity = '0';
+                void targetEl.offsetWidth; // force reflow
+
+                requestAnimationFrame(() => {
+                    targetEl.style.transition = `opacity ${HALF_MS}ms ${NAV_FADE_EASING}`;
+                    targetEl.style.opacity = '1';
+                });
+
+                setTimeout(() => {
+                    targetEl.style.transition = '';
+                    targetEl.style.opacity = '';
+                    targetEl.classList.remove('fade-preview');
+                }, HALF_MS);
+            }, HALF_MS);
         }
-        horizontalLock = null;
-    });
-})();
 
-// Slide animasi otomatis saat tap bottom nav (arah sesuai posisi di SWIPE_PAGES)
-function animatedSwitchPage(pageId, navItem) {
-    const activePage = document.querySelector('.page-section.active');
-    if (!activePage || activePage.id === pageId) { switchPage(pageId, navItem); return; }
+        // Alias untuk kompatibilitas — dulu nav-item pakai animatedSwitchPage()
+        // secara khusus, sekarang switchPage() sendiri sudah fade otomatis.
+        function animatedSwitchPage(pageId, navItem) {
+            switchPage(pageId, navItem);
+        }
 
-    const fromIndex = SWIPE_PAGES.indexOf(activePage.id);
-    const toIndex = SWIPE_PAGES.indexOf(pageId);
-    const container = document.querySelector('#customerView .container');
-    const targetEl = document.getElementById(pageId);
-
-    if (fromIndex === -1 || toIndex === -1 || !container || !targetEl) {
-        switchPage(pageId, navItem);
-        return;
-    }
-
-    const containerWidth = container.clientWidth;
-    const dir = toIndex > fromIndex ? 1 : -1;
-
-    targetEl.classList.add('swipe-preview');
-    targetEl.style.display = 'block';
-    targetEl.style.transition = '';
-    targetEl.style.transform = `translateX(${dir > 0 ? containerWidth : -containerWidth}px)`;
-    activePage.style.transition = '';
-    activePage.style.transform = 'translateX(0px)';
-    void targetEl.offsetWidth; // force reflow
-
-    requestAnimationFrame(() => {
-        activePage.style.transition = 'transform 0.28s ease';
-        targetEl.style.transition = 'transform 0.28s ease';
-        activePage.style.transform = `translateX(${dir > 0 ? -containerWidth : containerWidth}px)`;
-        targetEl.style.transform = 'translateX(0px)';
-    });
-
-    setTimeout(() => {
-        switchPage(pageId, navItem);
-        [activePage, targetEl].forEach(el => {
-            el.style.transition = '';
-            el.style.transform = '';
-            el.classList.remove('swipe-preview');
-        });
-        activePage.style.display = '';
-    }, 300);
-}
 
         // ============================================================
         // REWARD PAGE
@@ -1435,31 +1447,21 @@ function animatedSwitchPage(pageId, navItem) {
             const history = getPickupHistory();
             const totalKoin = history.reduce((sum, item) => sum + (item.koin != null ? Number(item.koin) : kgToKoin(item.category || 'organik', item.weight)), 0);
             const totalDitukar = getKoinRedeemHistory().reduce((sum, r) => sum + Number(r.jumlah || 0), 0);
-            return Math.max(totalKoin - totalDitukar, 0);
+            // D5: koin bonus dari membaca berita (circular reading-timer) ikut ditambahkan
+            return Math.max(totalKoin + getBonusKoin() - totalDitukar, 0);
         }
-        function tukarKoinKeUang() {
+        function openTukarModal() {
             const saldo = getSaldoKoinTersedia();
             if (saldo < 1) {
                 showToast('Saldo koin Anda belum cukup untuk ditukar', 'info');
                 return;
             }
-            const input = prompt('Saldo koin Anda: ' + saldo + ' (≈ ' + formatKoinToRupiah(saldo) + ')\nMasukkan jumlah koin yang ingin ditukar:');
-            if (input === null) return;
-            const jumlah = Number(input);
-            if (!jumlah || jumlah <= 0 || jumlah > saldo) {
-                showToast('Jumlah tidak valid', 'error');
-                return;
-            }
-            const history = getKoinRedeemHistory();
-            history.push({
-                jumlah: jumlah,
-                rupiah: jumlah * KOIN_TO_RUPIAH,
-                tanggal: new Date().toISOString(),
-                status: 'Diproses'
-            });
-            saveKoinRedeemHistory(history);
-            showToast('Permintaan tukar ' + jumlah + ' koin (' + formatKoinToRupiah(jumlah) + ') sedang diproses', 'success');
-            updateRewardPage();
+            document.getElementById('claimModal').classList.add('active');
+            document.getElementById('claimModal').dataset.saldo = saldo;
+            document.getElementById('claimModalLevel').textContent = saldo + ' Koin';
+            document.getElementById('claimModalKg').textContent = formatKoinToRupiah(saldo);
+            const jumlahInput = document.getElementById('claimJumlahKoin');
+            if (jumlahInput) { jumlahInput.value = ''; jumlahInput.max = saldo; }
         }
         function belanjaDiMart() {
             switchPage('simartPage', null);
@@ -1520,19 +1522,8 @@ function animatedSwitchPage(pageId, navItem) {
             const total = Math.max(localTotal, serverTotal);
             const claimedLevels = JSON.parse(localStorage.getItem('sisaClaimedLevels_' + getUserSuffix()) || '[]');
 
-            // Level system diperluas
-            const levels = [
-                { name:'Perunggu',      min:1,    next:50,   nextName:'Silver',       canClaimMin:1 },
-                { name:'Silver',        min:50,   next:150,  nextName:'Emas',         canClaimMin:50 },
-                { name:'Emas',          min:150,  next:250,  nextName:'Platinum',     canClaimMin:150 },
-                { name:'Platinum',      min:250,  next:400,  nextName:'Diamond',      canClaimMin:250 },
-                { name:'Diamond',       min:400,  next:600,  nextName:'Emerald',      canClaimMin:400 },
-                { name:'Emerald',       min:600,  next:900,  nextName:'Ruby',         canClaimMin:600 },
-                { name:'Ruby',          min:900,  next:1300, nextName:'Sapphire',     canClaimMin:900 },
-                { name:'Sapphire',      min:1300, next:1800, nextName:'Master',       canClaimMin:1300 },
-                { name:'Master',        min:1800, next:2500, nextName:'Grandmaster',  canClaimMin:1800 },
-                { name:'Grandmaster',   min:2500, next:9999, nextName:'Grandmaster',  canClaimMin:2500 }
-            ];
+            // Level system diperluas — pakai LEVEL_TABLE bersama (lihat computeLevel())
+            const levels = LEVEL_TABLE;
 
             let level = 'Belum Ada Level', canClaim = false, infoText = 'Kumpulkan 1 kg untuk mencapai level Perunggu!';
             let currentLevelObj = null;
@@ -1573,49 +1564,32 @@ function animatedSwitchPage(pageId, navItem) {
                 infoText = 'Kumpulkan 1 kg untuk mencapai level Perunggu!';
             }
 
-           document.getElementById('rewardCurrentLevel').textContent = level;
-            document.getElementById('rewardTotalKg').textContent      = total;
+           // G2: "Total Koin Anda" menampilkan SALDO yang bisa ditukar (ikut bonus baca berita,
+            // sudah dikurangi yang pernah ditukar) — angka ini konsisten dengan yang dipakai tombol Tukar.
+            const saldoTersedia = getSaldoKoinTersedia();
+            document.getElementById('rewardCurrentLevel').textContent = level;
+            document.getElementById('rewardTotalKg').textContent      = saldoTersedia;
             const rewardRupiahEl = document.getElementById('rewardTotalRupiah');
-            if (rewardRupiahEl) rewardRupiahEl.textContent = formatKoinToRupiah(total);
+            if (rewardRupiahEl) rewardRupiahEl.textContent = formatKoinToRupiah(saldoTersedia);
             document.getElementById('rewardStatus').textContent       = canClaim ? 'Dapat Diklaim' : (total < 1 ? 'Belum Ada Level' : 'Sudah Diklaim / Kumpulkan Lagi');
             document.getElementById('rewardStatus').style.color       = canClaim ? '#10b981' : '#f59e0b';
-            document.getElementById('rewardInfoText').textContent     = infoText;
-            const btnClaim = document.getElementById('btnClaimReward');
-            btnClaim.disabled = !canClaim;
         }
 
         // ============================================================
-        // KLAIM REWARD — dengan modal proper (perbaikan poin 6)
+        // TUKAR KOIN KE UANG — pakai modal bank/e-wallet (G1)
         // ============================================================
-        async function claimReward() {
-            // Cek total dari localStorage dulu
-            var history = getPickupHistory();
-            var localTotal = history.reduce(function(sum, item){ return sum + (item.koin != null ? Number(item.koin) : kgToKoin(item.category || 'organik', item.weight)); }, 0);
-            
-            // Coba juga ambil dari server (kalau ada cached customer data)
-            var serverTotal = Number(localStorage.getItem('sisaCachedTotal_' + getUserSuffix()) || 0);
-            var total = Math.max(localTotal, serverTotal);
-            
-            if (total < 1) { 
-                showToast('Anda belum memiliki kontribusi limbah untuk diklaim', 'error'); 
-                return; 
-            }
-
-            // Tampilkan modal klaim
-            document.getElementById('claimModal').classList.add('active');
-            document.getElementById('claimModalLevel').textContent = computeLevel(total);
-            document.getElementById('claimModalKg').textContent    = total + ' Koin';
-            // Store total for submitClaim to use
-            document.getElementById('claimModal').dataset.total = total;
-        }
-
         async function submitClaim() {
+            const jumlahInput = document.getElementById('claimJumlahKoin');
+            const jumlah     = Number(jumlahInput ? jumlahInput.value : 0);
             const namaBank   = document.getElementById('claimBank').value;
             const rekening   = document.getElementById('claimRekening').value.trim();
+            const saldo      = Number(document.getElementById('claimModal').dataset.saldo || 0);
+
+            if (!jumlah || jumlah <= 0) { showToast('Masukkan jumlah koin yang valid', 'error'); return; }
+            if (jumlah > saldo) { showToast('Jumlah melebihi saldo koin tersedia (' + saldo + ' koin)', 'error'); return; }
             if (!namaBank)   { showToast('Pilih bank/e-wallet terlebih dahulu', 'error'); return; }
             if (!rekening || !/^\d{6,20}$/.test(rekening)) { showToast('Nomor rekening/akun harus berupa angka (6-20 digit)', 'error'); return; }
 
-            // PATCH: Validasi login.nama sebelum kirim
             const login = JSON.parse(localStorage.getItem('sisaPlusLogin') || '{}');
             const namaPengirim = (login.nama || login.name || '').toString().trim();
             if (!namaPengirim) {
@@ -1623,33 +1597,17 @@ function animatedSwitchPage(pageId, navItem) {
                 return;
             }
 
-           const history = getPickupHistory();
-            const localTotal = history.reduce((sum, item) => sum + (item.koin != null ? Number(item.koin) : kgToKoin(item.category || 'organik', item.weight)), 0);
-            const serverTotal = Number(localStorage.getItem('sisaCachedTotal_' + getUserSuffix()) || 0);
-            const total   = Math.max(localTotal, serverTotal, Number(document.getElementById('claimModal').dataset.total || 0));
-            const level   = computeLevel(total);
-
             const btn = document.getElementById('btnSubmitClaim');
             btn.disabled = true;
             btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px;justify-content:center;"><span style="width:16px;height:16px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;"></span> Mengirim...</span>';
 
-            // Cek apakah level ini sudah pernah diklaim sebelumnya
-            const claimedLevels = JSON.parse(localStorage.getItem('sisaClaimedLevels_' + getUserSuffix()) || '[]');
-            if (claimedLevels.includes(level)) {
-                btn.disabled = false;
-                btn.textContent = 'Kirim Klaim';
-                showToast('Level ' + level + ' sudah pernah diklaim sebelumnya!', 'error');
-                return;
-            }
-
             try {
-                // PATCH: field lengkap dengan semua alias agar GAS pasti menangkap
                 const claimPayload = {
-                    type:          'claim',
+                    type:          'tukar_koin',
                     nama:          namaPengirim,
                     namaToko:      (login.toko || login.namaToko || login.store || '').toString().trim(),
-                    level:         level,
-                    totalLimbah:   total,
+                    jumlahKoin:    jumlah,
+                    nilaiRupiah:   jumlah * KOIN_TO_RUPIAH,
                     nomorRekening: rekening,   // key utama yang diharap GAS
                     namaBank:      namaBank,   // key utama yang diharap GAS
                     rekening:      rekening,   // alias cadangan
@@ -1658,21 +1616,26 @@ function animatedSwitchPage(pageId, navItem) {
                     waktuDiajukan: new Date().toISOString()
                 };
 
-                console.log('📤 Claim payload:', claimPayload);
+                console.log('📤 Tukar koin payload:', claimPayload);
                 await sendToSheet(claimPayload);
+
+                const history = getKoinRedeemHistory();
+                history.push({
+                    jumlah: jumlah,
+                    rupiah: jumlah * KOIN_TO_RUPIAH,
+                    tanggal: new Date().toISOString(),
+                    status: 'Diproses'
+                });
+                saveKoinRedeemHistory(history);
 
                 document.getElementById('claimModal').classList.remove('active');
                 document.getElementById('claimBank').value     = '';
                 document.getElementById('claimRekening').value = '';
+                if (jumlahInput) jumlahInput.value = '';
 
-                // Simpan level yang sudah diklaim agar tidak bisa diklaim lagi
-                const claimed = JSON.parse(localStorage.getItem('sisaClaimedLevels_' + getUserSuffix()) || '[]');
-                if (!claimed.includes(level)) { claimed.push(level); }
-                localStorage.setItem('sisaClaimedLevels_' + getUserSuffix(), JSON.stringify(claimed));
-                showSuccessAnimation('Reward Berhasil Diklaim!', 'Permintaan klaim Anda telah dikirim ke admin.');
+                showSuccessAnimation('Permintaan Tukar Terkirim!', 'Permintaan tukar ' + jumlah + ' koin (' + formatKoinToRupiah(jumlah) + ') sedang diproses.');
                 updateRewardPage();
             } catch (e) {
-                // Jika error jaringan total (misal offline)
                 showToast('Koneksi gagal. Pastikan internet aktif, lalu coba lagi.', 'error');
                 console.error('submitClaim error:', e);
             } finally {
@@ -1695,7 +1658,17 @@ function animatedSwitchPage(pageId, navItem) {
             pendingProduct = { nama, harga, gambar };
             const hargaFmt = harga > 0 ? ('Rp' + harga.toLocaleString('id-ID')) : 'Hubungi untuk harga';
             document.getElementById('buyOptionsTitle').textContent = nama;
-            document.getElementById('buyOptionsText').textContent = hargaFmt + ' — mau diapain nih?';
+            document.getElementById('buyOptionsPrice').textContent = hargaFmt;
+            const imgEl = document.getElementById('buyOptionsImg');
+            if (imgEl) imgEl.src = gambar || '';
+            // F2: indicator dots hanya muncul kalau produk punya lebih dari 1 gambar
+            const dotsEl = document.getElementById('buyOptionsDots');
+            if (dotsEl) {
+                const images = Array.isArray(arguments[3]) ? arguments[3] : (gambar ? [gambar] : []);
+                dotsEl.innerHTML = images.length > 1
+                    ? images.map((_, i) => `<span class="buy-sheet-dot${i === 0 ? ' active' : ''}"></span>`).join('')
+                    : '';
+            }
             document.getElementById('buyOptionsModal').classList.add('active');
         }
 
@@ -1714,8 +1687,10 @@ function animatedSwitchPage(pageId, navItem) {
 
         function checkoutFromCart() {
             const cart = getCart();
+            const selected = cart.filter(item => cartSelected.has(item.nama));
             if (!cart.length) { showToast('Keranjang masih kosong', 'error'); return; }
-            checkoutItems = cart;
+            if (!selected.length) { showToast('Pilih minimal 1 produk untuk checkout', 'error'); return; }
+            checkoutItems = selected;
             closeCartPanel();
             goToCheckout();
         }
@@ -1797,8 +1772,30 @@ async function submitCheckout() {
             const alamat = document.getElementById('checkoutAlamat').value.trim();
             if (!alamat) { showToast('Alamat pengiriman wajib diisi', 'error'); return; }
 
+            // C11: lapisan konfirmasi kedua sebelum pesanan benar-benar diproses,
+            // supaya tap tidak sengaja tidak langsung nge-charge/checkout.
+            if (!confirm('Konfirmasi pesanan ini sekarang?')) return;
+
             showScheduleLoading();
             try {
+                // H1: simpan snapshot pesanan SEBELUM checkoutItems dikosongkan, dipakai oleh
+                // halaman Detail Pesanan.
+                const loginData = JSON.parse(localStorage.getItem('sisaPlusLogin') || '{}');
+                const subtotalSnapshot = checkoutItems.reduce((s, item) => s + item.harga * item.qty, 0);
+                const potonganSnapshot = checkoutKoinDipakai * KOIN_TO_RUPIAH;
+                const totalSnapshot = Math.max(subtotalSnapshot - potonganSnapshot, 0);
+                saveLastOrder({
+                    orderNumber: '#TL' + Date.now(),
+                    namaPenerima: (loginData.nama || loginData.name || '-').toString(),
+                    alamat: alamat,
+                    items: checkoutItems.map(i => ({ nama: i.nama, harga: i.harga, qty: i.qty, gambar: i.gambar })),
+                    subtotal: subtotalSnapshot,
+                    ongkir: 0,
+                    potonganKoin: potonganSnapshot,
+                    total: totalSnapshot,
+                    waktu: new Date().toISOString()
+                });
+
                 for (const item of checkoutItems) {
                     const hargaFmt = 'Rp' + item.harga.toLocaleString('id-ID');
                     const orderPayload = { name: item.nama, price: hargaFmt, quantity: item.qty };
@@ -1821,12 +1818,12 @@ async function submitCheckout() {
                saveCart([]);
                 checkoutItems = [];
                 hideScheduleOverlay(); 
-				
+					
                 pushNotification('Pesanan Berhasil Dibuat', 'Pesanan Anda sedang diproses oleh admin.');
                 showSuccessAnimation('Pesanan Berhasil!', 'Pesanan Anda sedang diproses');
                 setTimeout(() => {
-                    const homeBtn = document.querySelector('.nav-item.nav-home') || document.querySelector('.nav-item');
-                    switchPage('sitrackPage', homeBtn);
+                    switchPage('orderDetailPage', null);
+                    renderOrderDetailPage();
                 }, 900);
             } catch (e) {
                 hideScheduleOverlay();
@@ -1835,11 +1832,12 @@ async function submitCheckout() {
                 saveCart([]);
                 checkoutItems = [];
                 setTimeout(() => {
-                    const homeBtn = document.querySelector('.nav-item.nav-home') || document.querySelector('.nav-item');
-                    switchPage('sitrackPage', homeBtn);
+                    switchPage('orderDetailPage', null);
+                    renderOrderDetailPage();
                 }, 900);
             }
         }
+
 
         function orderProduct(name, price) {
             currentOrder = { name, price, quantity: 1 };
@@ -1857,6 +1855,107 @@ async function submitCheckout() {
         // ============================================================
         // KERANJANG (CART)
         // ============================================================
+        // ============================================================
+        // H1: DETAIL PESANAN
+        // ============================================================
+        function getLastOrderKey() { return 'sisaLastOrder_' + getUserSuffix(); }
+
+        function saveLastOrder(order) {
+            localStorage.setItem(getLastOrderKey(), JSON.stringify(order));
+        }
+
+        function getLastOrder() {
+            const raw = localStorage.getItem(getLastOrderKey());
+            return raw ? JSON.parse(raw) : null;
+        }
+
+        // Urutan tahap pengiriman untuk timeline "Status Pesanan"
+        const ORDER_STEPS = [
+            { key: 'diterima',   label: 'Pesanan Diterima',   desc: 'Pesanan kamu sudah diterima admin' },
+            { key: 'dikemas',    label: 'Sedang Dikemas',     desc: 'Produk sedang disiapkan & dikemas' },
+            { key: 'dikirim',    label: 'Dikirim',            desc: 'Paket sedang dalam perjalanan' },
+            { key: 'perjalanan', label: 'Dalam Perjalanan',   desc: 'Kurir sedang menuju alamatmu' },
+            { key: 'tiba',       label: 'Tiba di Tujuan',     desc: 'Paket sudah sampai di tujuan' }
+        ];
+
+        function formatOrderTime(iso) {
+            try {
+                return new Date(iso).toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
+            } catch (e) { return '-'; }
+        }
+
+        function renderOrderDetailPage() {
+            const order = getLastOrder();
+            const emptyEl = document.getElementById('orderDetailEmpty');
+            const contentEl = document.getElementById('orderDetailContent');
+            if (!order) {
+                if (emptyEl) emptyEl.style.display = 'block';
+                if (contentEl) contentEl.style.display = 'none';
+                return;
+            }
+            if (emptyEl) emptyEl.style.display = 'none';
+            if (contentEl) contentEl.style.display = 'block';
+
+            document.getElementById('orderDetailNama').textContent = order.namaPenerima || '-';
+            document.getElementById('orderDetailNumber').textContent = order.orderNumber || '-';
+            document.getElementById('orderDetailWaktu').textContent = formatOrderTime(order.waktu);
+            document.getElementById('orderDetailAlamatNama').textContent = order.namaPenerima || '-';
+            document.getElementById('orderDetailAlamatText').textContent = order.alamat || '-';
+
+            // Tahap aktif ditentukan dari selisih waktu sejak pesanan dibuat (simulasi progres pengiriman)
+            const menitBerlalu = (Date.now() - new Date(order.waktu).getTime()) / 60000;
+            const activeIndex = Math.min(ORDER_STEPS.length - 1, Math.floor(menitBerlalu / 2));
+
+            const timelineEl = document.getElementById('orderDetailTimeline');
+            timelineEl.innerHTML = ORDER_STEPS.map((step, i) => {
+                const state = i < activeIndex ? 'done' : (i === activeIndex ? 'active' : 'pending');
+                return `
+                <div class="order-step ${state}">
+                    <div class="order-step-line">
+                        <div class="order-step-dot">${state === 'done' ? '✓' : (i + 1)}</div>
+                        ${i < ORDER_STEPS.length - 1 ? '<div class="order-step-connector"></div>' : ''}
+                    </div>
+                    <div class="order-step-body">
+                        <div class="order-step-label-row">
+                            <span class="order-step-label">${step.label}</span>
+                            ${state === 'active' ? '<span class="order-step-badge">Sedang Berjalan</span>' : ''}
+                        </div>
+                        <div class="order-step-desc">${step.desc}</div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            const itemsEl = document.getElementById('orderDetailItems');
+            itemsEl.innerHTML = order.items.map(item => `
+                <div class="order-product-row">
+                    <img src="${item.gambar}" class="order-product-img" alt="${item.nama}">
+                    <div class="order-product-info">
+                        <div class="order-product-name">${item.nama}</div>
+                        <div class="order-product-qty">${item.qty} x Rp${item.harga.toLocaleString('id-ID')}</div>
+                    </div>
+                    <button class="order-product-buy-again" onclick="showBuyOptions('${item.nama.replace(/'/g, "\\'")}', ${item.harga}, '${item.gambar}')">Beli Lagi</button>
+                </div>`).join('');
+
+            document.getElementById('orderDetailSubtotal').textContent = 'Rp' + order.subtotal.toLocaleString('id-ID');
+            document.getElementById('orderDetailOngkir').textContent = order.ongkir > 0 ? 'Rp' + order.ongkir.toLocaleString('id-ID') : 'Gratis';
+            document.getElementById('orderDetailTotal').textContent = 'Rp' + order.total.toLocaleString('id-ID');
+        }
+
+        function copyOrderNumber() {
+            const order = getLastOrder();
+            if (!order) return;
+            navigator.clipboard.writeText(order.orderNumber).then(() => {
+                showToast('Nomor pesanan disalin', 'success');
+            }).catch(() => {
+                showToast('Gagal menyalin, coba lagi', 'error');
+            });
+        }
+
+        function goToOrderDetail() {
+            switchPage('orderDetailPage', null);
+            renderOrderDetailPage();
+        }
+
         function getCartKey() { return 'sisaCart_' + getUserSuffix(); }
 
         function getCart() {
@@ -1887,6 +1986,7 @@ async function submitCheckout() {
                 cart.push({ nama: pendingProduct.nama, harga: pendingProduct.harga, gambar: pendingProduct.gambar, qty: 1 });
             }
             saveCart(cart);
+            cartSelected.add(pendingProduct.nama);
             closeBuyOptionsModal();
             showToast('Produk masuk keranjang', 'success');
         }
@@ -1910,32 +2010,94 @@ async function submitCheckout() {
             renderCartItems();
         }
 
+        // F1: state pilihan item keranjang (transient, reset tiap render awal)
+        let cartSelected = new Set();
+
+        function toggleSelectAllCart(checked) {
+            const cart = getCart();
+            cartSelected = checked ? new Set(cart.map(i => i.nama)) : new Set();
+            renderCartItems();
+        }
+
+        function toggleCartItemSelect(nama, checked) {
+            if (checked) cartSelected.add(nama); else cartSelected.delete(nama);
+            renderCartItems();
+        }
+
+        function removeCartItem(nama) {
+            const cart = getCart().filter(i => i.nama !== nama);
+            cartSelected.delete(nama);
+            saveCart(cart);
+            renderCartItems();
+        }
+
+        const CART_LEAF_ICON = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
         function renderCartItems() {
             const cart = getCart();
             const list = document.getElementById('cartItemsList');
             const totalText = document.getElementById('cartTotalText');
+            const totalCount = document.getElementById('cartTotalCount');
+            const headerSubtitle = document.getElementById('cartHeaderSubtitle');
+            const selectAllBox = document.getElementById('cartSelectAll');
+            const selectCount = document.getElementById('cartSelectCount');
+            const bottomBar = document.getElementById('cartBottomBar');
+
+            // buang seleksi untuk item yang sudah tidak ada lagi di keranjang
+            const namesInCart = new Set(cart.map(i => i.nama));
+            cartSelected.forEach(n => { if (!namesInCart.has(n)) cartSelected.delete(n); });
+
+            if (headerSubtitle) headerSubtitle.textContent = cart.length + ' produk • yuk checkout produk daur ulangmu';
+
             if (!cart.length) {
-                list.innerHTML = '<div style="text-align:center;padding:24px 0;color:#94a3b8;font-size:14px;">Keranjang masih kosong</div>';
-                totalText.textContent = 'Rp0';
+                list.innerHTML = '<div style="text-align:center;padding:36px 0;color:#94a3b8;font-size:14px;">Keranjang masih kosong</div>';
+                if (totalText) totalText.textContent = 'Rp0';
+                if (totalCount) totalCount.textContent = '0 produk dipilih';
+                if (selectCount) selectCount.textContent = '0 produk';
+                if (selectAllBox) { selectAllBox.checked = false; selectAllBox.indeterminate = false; }
+                if (bottomBar) bottomBar.style.display = 'none';
                 return;
             }
-            let total = 0;
+            if (bottomBar) bottomBar.style.display = 'flex';
+
+            let total = 0, selectedQty = 0;
             list.innerHTML = cart.map(item => {
-                total += item.harga * item.qty;
-                return '<div style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;">' +
-                    '<img src="' + item.gambar + '" style="width:48px;height:48px;border-radius:8px;object-fit:cover;">' +
-                    '<div style="flex:1;">' +
-                        '<div style="font-size:13px;font-weight:600;color:#1e293b;">' + item.nama + '</div>' +
-                        '<div style="font-size:12px;color:#64748b;">Rp' + item.harga.toLocaleString('id-ID') + '</div>' +
-                    '</div>' +
-                    '<div style="display:flex;align-items:center;gap:8px;">' +
-                        '<button onclick="changeCartQty(\'' + item.nama.replace(/'/g, "\\'") + '\',-1)" style="width:24px;height:24px;border-radius:6px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;">-</button>' +
-                        '<span style="font-size:13px;font-weight:600;min-width:16px;text-align:center;">' + item.qty + '</span>' +
-                        '<button onclick="changeCartQty(\'' + item.nama.replace(/'/g, "\\'") + '\',1)" style="width:24px;height:24px;border-radius:6px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;">+</button>' +
-                    '</div>' +
-                '</div>';
+                const checked = cartSelected.has(item.nama);
+                if (checked) { total += item.harga * item.qty; selectedQty += item.qty; }
+                const safeName = item.nama.replace(/'/g, "\\'");
+                return `
+                <div class="cart-item-row">
+                    <label class="cart-checkbox-wrap">
+                        <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCartItemSelect('${safeName}', this.checked)">
+                        <span class="cart-checkbox-box"></span>
+                    </label>
+                    <img src="${item.gambar}" class="cart-item-photo" alt="${item.nama}">
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">${item.nama}</div>
+                        <div class="cart-item-cat">${CART_LEAF_ICON} Produk Daur Ulang</div>
+                        <div class="cart-item-price">Rp${item.harga.toLocaleString('id-ID')}</div>
+                    </div>
+                    <div class="cart-item-actions">
+                        <button class="cart-item-delete" onclick="removeCartItem('${safeName}')" aria-label="Hapus">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
+                        <div class="cart-item-stepper">
+                            <button onclick="changeCartQty('${safeName}',-1)">−</button>
+                            <span>${item.qty}</span>
+                            <button onclick="changeCartQty('${safeName}',1)">+</button>
+                        </div>
+                    </div>
+                </div>`;
             }).join('');
-            totalText.textContent = 'Rp' + total.toLocaleString('id-ID');
+
+            if (totalText) totalText.textContent = 'Rp' + total.toLocaleString('id-ID');
+            if (totalCount) totalCount.textContent = selectedQty + ' produk dipilih';
+            if (selectCount) selectCount.textContent = cart.length + ' produk';
+            if (selectAllBox) {
+                const allSelected = cart.length > 0 && cart.every(i => cartSelected.has(i.nama));
+                selectAllBox.checked = allSelected;
+                selectAllBox.indeterminate = !allSelected && cartSelected.size > 0;
+            }
         }
         async function confirmOrder() {
             if (!currentOrder || !currentOrder.name) { showToast('Order data tidak valid', 'error'); return; }
@@ -2060,8 +2222,10 @@ function toggleAccountSwitcher() {
     } else {
         dropdown.innerHTML = list.map((acc, i) => {
             const isCurrent = acc.telepon === current.telepon;
+            const namaSafe = escapeNewsHtml(acc.nama || '');
+            const tokoSafe = escapeNewsHtml(acc.toko || (acc.isAdmin ? 'Admin' : ''));
             return `<div class="account-switch-item ${isCurrent ? 'current' : ''}" onclick="switchAccount(${i})">
-                        ${acc.nama} - ${acc.toko || (acc.isAdmin ? 'Admin' : '')}
+                        ${namaSafe} - ${tokoSafe}
                     </div>`;
         }).join('');
     }
@@ -2506,7 +2670,7 @@ if (el('dashTotalLimbah'))   animateCountUp(el('dashTotalLimbah'), totalLimbah, 
                         }).join('')}
                     </div>
                 `;
- setContributorRange(window.currentContributorRange || 'bulan');
+ setContributorRange(window.currentContributorRange || 'hari');
             }
 
             // Aktivitas terbaru (5 pickup terakhir)
@@ -2836,7 +3000,14 @@ function getCustomerDate(c) {
             document.querySelectorAll('.status-dropdown-menu').forEach(d => d.style.display = 'none');
         });
 
+        // C15: cache signature terakhir yang di-render, dipakai buat skip
+        // re-render total kalau data dari polling background sama persis.
+        let _lastPickupsSig = null;
         function renderPickupsData(pickups) {
+            const sig = JSON.stringify(pickups || []);
+            if (sig === _lastPickupsSig) return; // data gak berubah, gak perlu render ulang
+            _lastPickupsSig = sig;
+
             const tBody = document.querySelector('#pickupsTable tbody');
             const empty = document.getElementById('pickupsEmpty');
             if (!tBody) return;
@@ -2891,7 +3062,7 @@ function getCustomerDate(c) {
 
                 const tr = document.createElement('tr');
                 tr.setAttribute('data-pickup-row-id', pid);
-                tr.innerHTML = `<td>${tanggalFmt}</td><td>${nama}</td><td>${toko}</td><td>${berat}</td><td class="status-cell-${pid}"></td><td><button class="btn-update" data-pid="${pid}" data-row="${row}" data-id="${id}" onclick="handleSavePickup(this)" style="padding:7px 18px;border-radius:8px;border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Simpan</button></td>`;
+                tr.innerHTML = `<td>${tanggalFmt}</td><td>${nama}</td><td>${toko}</td><td>${berat}</td><td class="status-cell-${pid}"></td>`;
                 const statusCell = tr.querySelector('.status-cell-' + pid);
                 if (statusCell) {
                     statusCell.innerHTML = '';
@@ -3010,7 +3181,12 @@ function getCustomerDate(c) {
             }
         }
 
+        let _lastOrdersSig = null;
         function renderOrdersData(orders) {
+            const sig = JSON.stringify(orders || []);
+            if (sig === _lastOrdersSig) return;
+            _lastOrdersSig = sig;
+
             const tBody = document.querySelector('#adminOrders .admin-table tbody');
             const empty = document.querySelector('#adminOrders .empty-state');
             if (!tBody) return;
@@ -3050,7 +3226,7 @@ function getCustomerDate(c) {
 
                 const tr = document.createElement('tr');
                 tr.setAttribute('data-order-row-id', oid);
-                tr.innerHTML = `<td>${id}</td><td>${nama}</td><td>${toko}</td><td>${items}</td><td>${quantity}</td><td class="ostatus-cell-${oid}"></td><td><button class="btn-update" data-oid="${oid}" data-row="${row}" data-id="${id}" onclick="handleSaveOrder(this)" style="padding:7px 18px;border-radius:8px;border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Simpan</button></td>`;
+                tr.innerHTML = `<td>${id}</td><td>${nama}</td><td>${toko}</td><td>${items}</td><td>${quantity}</td><td class="ostatus-cell-${oid}"></td>`;
                 const statusCell = tr.querySelector('.ostatus-cell-' + oid);
                 if (statusCell) {
                     statusCell.innerHTML = '';
@@ -3260,7 +3436,12 @@ function getCustomerDate(c) {
             }
         }
 
+        let _lastCustomersSig = null;
         function renderCustomersData(customers) {
+            const sig = JSON.stringify(customers || []);
+            if (sig === _lastCustomersSig) return;
+            _lastCustomersSig = sig;
+
             const tBody = document.querySelector('#adminCustomers .admin-table tbody');
             const empty = document.querySelector('#adminCustomers .empty-state');
             if (!tBody) return;
@@ -3379,7 +3560,12 @@ function getCustomerDate(c) {
             }
         }
 
+        let _lastClaimsSig = null;
         function renderClaimsData(claims) {
+            const sig = JSON.stringify(claims || []);
+            if (sig === _lastClaimsSig) return;
+            _lastClaimsSig = sig;
+
             const tBody = document.querySelector('#claimsTable tbody');
             const empty = document.getElementById('claimsEmpty');
             if (!tBody) return;
@@ -3791,7 +3977,7 @@ function executeLogin(data) {
 
 // Cek otomatis saat halaman pertama kali dibuka
 window.addEventListener('DOMContentLoaded', () => {
-	//initVisitorCounter();
+	initVisitorCounter();
 
     // 🔑 FIX: prefetch data Toko (produk & banner) + Berita SEDINI MUNGKIN,
     // begitu script dimuat — TIDAK menunggu proses login selesai dulu.
@@ -3809,6 +3995,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // siap di cache begitu proses login selesai, sehingga perilakunya sama
     // persis dengan kondisi refresh.
     prefetchAppData();
+    startReadingTimerLoop();
 
     // ============================================================
     // ROUTING AWAL: Landing vs Onboarding
@@ -3834,7 +4021,14 @@ if (!isMobileDevice) {
     // (Tombol "Masuk" di landing akan langsung ke form login lewat showApp())
 } else {
     window._obTarget = 'login';
-    window._obLoginData = savedLogin ? JSON.parse(savedLogin) : null;
+    try {
+        window._obLoginData = savedLogin ? JSON.parse(savedLogin) : null;
+    } catch (e) {
+        // Data login tersimpan korup -> jangan sampai bikin seluruh routing macet,
+        // anggap saja belum ada sesi tersimpan.
+        console.warn('sisaPlusLogin tersimpan tidak valid, diabaikan:', e);
+        window._obLoginData = null;
+    }
     showOnboardingOnly();
 }
 });
@@ -3848,28 +4042,113 @@ function showOnboardingOnly() {
     if (onboarding) onboarding.style.display = 'flex';
     document.body.classList.remove('landing-mode');
     document.body.classList.add('onboarding-mode');
+    // Track baru saja terlihat (sebelumnya display:none -> offsetWidth 0),
+    // ukur ulang setelah browser sempat layout supaya swipe langsung akurat.
+    requestAnimationFrame(() => {
+        if (typeof window._obSwipeRecalc === 'function') window._obSwipeRecalc();
+    });
 }
 
 // Dipanggil setelah swipe di Onboarding selesai (lihat init swipe di
 // bagian bawah file ini). Mengarahkan ke app langsung (user sudah login)
 // atau ke form login (user belum login).
+// J1: transisi onboarding -> login sekarang cross-fade halus (bukan potong instan).
+const ONBOARDING_TRANSITION_MS = 260;
+
 function completeOnboarding() {
     const onboarding = document.getElementById('onboarding-wrapper');
-    if (onboarding) onboarding.style.display = 'none';
+    const appWrapper = document.getElementById('app-wrapper');
 
-    document.getElementById('app-wrapper').style.display = 'block';
-    document.body.classList.remove('onboarding-mode');
-    document.body.classList.remove('landing-mode');
-    document.body.classList.add('app-mode');
+    // Kalau app-wrapper saja tidak ada di DOM, tidak ada yang bisa dilakukan —
+    // tapi setidaknya jangan biarkan onboarding nyangkut menutupi layar.
+    if (!appWrapper) {
+        if (onboarding) onboarding.style.display = 'none';
+        console.error('completeOnboarding: #app-wrapper tidak ditemukan di DOM');
+        return;
+    }
 
-    document.getElementById('login-layer').style.display = '';
+    // 🛡️ SAFETY NET: apapun yang terjadi di bawah (error, elemen hilang,
+    // requestAnimationFrame yang di-throttle browser, dsb), paksa app-wrapper
+    // tampil paling lambat 900ms dari sekarang supaya user TIDAK PERNAH
+    // tersangkut di layar putih kosong.
+    let revealed = false;
+    function forceReveal() {
+        if (revealed) return;
+        revealed = true;
+        if (onboarding) { onboarding.style.display = 'none'; onboarding.style.opacity = ''; onboarding.style.transition = ''; }
+        appWrapper.style.transition = '';
+        appWrapper.style.opacity = '1';
+        appWrapper.style.display = 'block';
+        document.body.classList.remove('onboarding-mode');
+        document.body.classList.remove('landing-mode');
+        document.body.classList.add('app-mode');
+        const loginLayer = document.getElementById('login-layer');
+        if (loginLayer) loginLayer.style.display = '';
+        try {
+            if (window._obLoginData) {
+                const namaField = document.getElementById('masukNama');
+                const passField = document.getElementById('masukPassword');
+                if (namaField) namaField.value = window._obLoginData.nama || '';
+                if (passField) passField.value = window._obLoginData.password || '';
+            }
+        } catch (e) { console.warn('Gagal isi form login otomatis:', e); }
+    }
+    const safetyTimer = setTimeout(forceReveal, 900);
 
-    // Kalau ada data login/daftar tersimpan -> isi otomatis form Masuk
-    if (window._obLoginData) {
-        const namaField = document.getElementById('masukNama');
-        const passField = document.getElementById('masukPassword');
-        if (namaField) namaField.value = window._obLoginData.nama || '';
-        if (passField) passField.value = window._obLoginData.password || '';
+    try {
+        if (onboarding) {
+            onboarding.style.transition = `opacity ${ONBOARDING_TRANSITION_MS}ms ease-out`;
+            onboarding.style.opacity = '0';
+        }
+
+        setTimeout(() => {
+            if (revealed) { clearTimeout(safetyTimer); return; }
+            try {
+                if (onboarding) {
+                    onboarding.style.display = 'none';
+                    onboarding.style.opacity = '';
+                    onboarding.style.transition = '';
+                }
+
+                appWrapper.style.opacity = '0';
+                appWrapper.style.display = 'block';
+                document.body.classList.remove('onboarding-mode');
+                document.body.classList.remove('landing-mode');
+                document.body.classList.add('app-mode');
+
+                const loginLayer = document.getElementById('login-layer');
+                if (loginLayer) loginLayer.style.display = '';
+
+                if (window._obLoginData) {
+                    const namaField = document.getElementById('masukNama');
+                    const passField = document.getElementById('masukPassword');
+                    if (namaField) namaField.value = window._obLoginData.nama || '';
+                    if (passField) passField.value = window._obLoginData.password || '';
+                }
+
+                void appWrapper.offsetWidth; // force reflow supaya transisi mulai dari opacity:0
+                requestAnimationFrame(() => {
+                    if (revealed) return;
+                    appWrapper.style.transition = `opacity ${ONBOARDING_TRANSITION_MS}ms ease-in`;
+                    appWrapper.style.opacity = '1';
+                });
+                setTimeout(() => {
+                    if (revealed) return;
+                    appWrapper.style.transition = '';
+                    appWrapper.style.opacity = '';
+                    revealed = true;
+                    clearTimeout(safetyTimer);
+                }, ONBOARDING_TRANSITION_MS);
+            } catch (err) {
+                console.error('completeOnboarding: error saat transisi, fallback dipaksa tampil:', err);
+                forceReveal();
+                clearTimeout(safetyTimer);
+            }
+        }, ONBOARDING_TRANSITION_MS);
+    } catch (err) {
+        console.error('completeOnboarding: error di awal, fallback dipaksa tampil:', err);
+        forceReveal();
+        clearTimeout(safetyTimer);
     }
 }
 
@@ -3883,6 +4162,58 @@ function prefetchAppData() {
     try { loadSimartProducts(); } catch (e) { console.error('Gagal prefetch produk SiMart:', e); }
     try { loadBannersToSimart(); } catch (e) { console.error('Gagal prefetch banner SiMart:', e); }
     try { loadNewsFromServer(); } catch (e) { console.error('Gagal prefetch berita:', e); }
+}
+
+// ============================================================
+// E1: VISITOR COUNTER LANDING PAGE
+// ------------------------------------------------------------
+// Sebelumnya pakai badge eksternal (hits.seeyoufarm.com) yang sering
+// diblokir oleh Brave Shields / ad-blocker (dianggap tracker), sehingga
+// selalu tampil "-". Sekarang: coba ambil angka dari backend Apps Script
+// dulu; kalau backend belum punya endpoint ini / gagal, fallback ke
+// counter lokal (localStorage) supaya tetap tampil angka, tidak pernah "-".
+// ============================================================
+function getLocalVisitorCount() {
+    return Number(localStorage.getItem('sisaVisitorCountLocal') || 0);
+}
+function bumpLocalVisitorCount() {
+    const next = getLocalVisitorCount() + 1;
+    localStorage.setItem('sisaVisitorCountLocal', String(next));
+    return next;
+}
+async function initVisitorCounter() {
+    const el = document.getElementById('visitorCountValue');
+    if (!el) return;
+
+    // Hanya hitung 1x per sesi tab, biar refresh berkali-kali tidak nambah terus
+    const alreadyCountedThisSession = sessionStorage.getItem('visitorCountedThisSession') === '1';
+
+    try {
+        // Coba backend dulu (kalau Apps Script sudah/akan punya endpoint ini)
+        const url = APPS_SCRIPT_URL + '?type=visitor_count&t=' + Date.now();
+        const res = await fetch(url);
+        const json = await res.json();
+        if (json && json.success && typeof json.count !== 'undefined') {
+            let count = Number(json.count) || 0;
+            if (!alreadyCountedThisSession) {
+                sessionStorage.setItem('visitorCountedThisSession', '1');
+                // catat kunjungan ke backend, fire-and-forget (tidak menunggu respons)
+                sendToSheetNow({ type: 'visitor', action: 'increment' }).catch(() => {});
+                count += 1;
+            }
+            el.textContent = count.toLocaleString('id-ID');
+            return;
+        }
+        throw new Error('Backend visitor_count belum tersedia');
+    } catch (err) {
+        // Fallback: counter lokal per-browser, supaya tetap tampil angka (bukan "-")
+        let count = getLocalVisitorCount();
+        if (!alreadyCountedThisSession) {
+            sessionStorage.setItem('visitorCountedThisSession', '1');
+            count = bumpLocalVisitorCount();
+        }
+        el.textContent = count.toLocaleString('id-ID');
+    }
 }
 // Validasi Nomor HP: Hanya boleh angka (0-9) dengan maksimal 13 digit
 const daftarTelepon = document.getElementById('daftarTelepon');
@@ -4066,15 +4397,26 @@ async function submitNewsAdmin() {
     const gambarEl = document.getElementById('newsFormGambar');
     const kategoriEl = document.getElementById('newsFormKategori');
     const isTopEl = document.getElementById('newsFormIsTop');
+    const submitBtn = document.getElementById('newsSubmitBtn');
+    const originalBtnText = submitBtn ? submitBtn.textContent : null;
 
     const title = (titleEl.value || '').trim();
     const content = (contentEl.value || '').trim();
-    const gambar = (gambarEl ? gambarEl.value : '').trim();
     const kategori = kategoriEl ? kategoriEl.value : 'Lingkungan';
     const isTop = isTopEl ? isTopEl.checked : false;
 
     if (!title || !content) {
         alert('Judul dan isi berita wajib diisi');
+        return;
+    }
+
+    let gambar;
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Mengupload foto...'; }
+    try {
+        gambar = await uploadPendingImageIfAny('newsFormGambar', title);
+    } catch (err) {
+        alert('Gagal upload foto: ' + (err && err.message ? err.message : err));
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = originalBtnText; }
         return;
     }
 
@@ -4100,10 +4442,16 @@ async function submitNewsAdmin() {
         if (gambarEl) gambarEl.value = '';
         if (isTopEl) isTopEl.checked = false;
         if (kategoriEl) kategoriEl.value = 'Lingkungan';
-        await renderNewsAdmin();
-        if (typeof showToast === 'function') showToast('Berita berhasil ditambahkan', 'success');
+        var newsPreview = document.getElementById('newsFormGambarPreview');
+        if (newsPreview) { newsPreview.style.display = 'none'; newsPreview.src = ''; }
+        var newsFileInput = document.getElementById('newsFormGambarFile');
+        if (newsFileInput) newsFileInput.value = '';
+      if (typeof showToast === 'function') showToast('Berita berhasil ditambahkan', 'success');
+        renderNewsAdmin(); // refresh tabel di belakang layar, tidak perlu ditunggu
     } catch (err) {
         alert('Gagal menambahkan berita: ' + err);
+    } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = originalBtnText; }
     }
 }
 
@@ -4163,18 +4511,29 @@ async function renderNewsList() {
     const container = document.getElementById('newsListContainer');
     if (!container) return;
 
-    // Coba ambil dari localStorage dulu kalau memori masih kosong
+    // BATCH2 #10: stale-while-revalidate -- sama pola dengan loadSimartProducts().
+    // 1. Kalau belum ada di memori, coba ambil dari localStorage dulu
     if (adminNewsCache === null) {
         const cached = getNewsCache();
         if (cached) adminNewsCache = cached;
     }
-    // Baru tampilkan "Memuat..." kalau BENAR-BENAR belum ada data sama sekali
-    if (adminNewsCache === null) {
+    // 2. Kalau sudah ada data (dari memori ATAU localStorage), langsung render --
+    //    tanpa nunggu fetch ke server dulu.
+    if (adminNewsCache !== null) {
+        renderNewsListFromData(adminNewsCache);
+    } else {
         container.innerHTML = '<div style="text-align:center;padding:30px 0;color:#94a3b8;font-size:14px;">Memuat berita...</div>';
     }
 
-    let list = await loadNewsFromServer();
-    // ... (baris-baris setelah ini TIDAK perlu diubah, biarkan seperti semula)
+    // 3. Tetap fetch data terbaru dari server di belakang layar, lalu re-render.
+    const list = await loadNewsFromServer();
+    renderNewsListFromData(list);
+}
+
+function renderNewsListFromData(list) {
+    const topContainer = document.getElementById('newsTopContainer');
+    const container = document.getElementById('newsListContainer');
+    if (!container) return;
 
     if (currentNewsCategory !== 'Semua') {
         list = list.filter(n => (n.Kategori || '') === currentNewsCategory);
@@ -4199,7 +4558,7 @@ async function renderNewsList() {
         <img src="${image}" onerror="this.style.display='none'">
         <div class="news-top-overlay">
             <div class="news-top-badge">#${index + 1} Top Berita</div>
-            <div style="font-size:20px;font-weight:800;">${escapeNewsHtml(title)}</div>
+           <div class="news-top-title">${escapeNewsHtml(title)}</div>
             <div style="font-size:12px;margin-top:8px;opacity:0.85;">${formatNewsDate(date)}</div>
         </div>
     </div>`;
@@ -4235,7 +4594,7 @@ if (scrollEl && dotsEl) {
     const image = news.GambarURL || '';
     const date = news.Timestamp || '';
     const kategori = news.Kategori || '';
-    const views = news.Dibaca || news.Views || '0';
+    const views = Number(news.Dibaca || news.Views || 0) + getLocalNewsViews(id);
     return `<div class="news-card" onclick="openNewsDetail('${id}')">
         <div class="news-card-img">${image ? '<img src="' + image + '" onerror="this.style.display=\'none\'">' : '📷'}</div>
         <div class="news-card-body">
@@ -4260,35 +4619,280 @@ if (scrollEl && dotsEl) {
                         ${views}
                     </span>
                 </div>
-                <button class="news-card-bookmark" onclick="event.stopPropagation()">
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                    </svg>
-                </button>
             </div>
         </div>
     </div>`;
 }).join('');
 }
 
+// ============================================================
+// D2: VIEW COUNTER PER ARTIKEL (localStorage, digabung ke angka backend)
+// ============================================================
+function getNewsViewsMap() {
+    try { return JSON.parse(localStorage.getItem('sisaNewsViewsLocal') || '{}'); } catch (e) { return {}; }
+}
+function getLocalNewsViews(id) {
+    return Number(getNewsViewsMap()[id] || 0);
+}
+function incrementNewsView(id) {
+    const map = getNewsViewsMap();
+    map[id] = (Number(map[id]) || 0) + 1;
+    localStorage.setItem('sisaNewsViewsLocal', JSON.stringify(map));
+    // Kirim ke backend juga (fire-and-forget) kalau suatu saat sudah ada endpoint-nya
+    try { sendToSheetNow({ type: 'news_view', newsId: id }).catch(() => {}); } catch (e) {}
+}
+
+// ============================================================
+// D1: BOOKMARK BERITA (disimpan lokal per user)
+// ============================================================
+function getNewsBookmarks() {
+    try { return JSON.parse(localStorage.getItem('sisaNewsBookmarks_' + getUserSuffix()) || '[]'); } catch (e) { return []; }
+}
+function isNewsBookmarked(id) {
+    return getNewsBookmarks().includes(id);
+}
+function toggleNewsBookmark() {
+    if (!_newsDetailCurrentId) return;
+    let list = getNewsBookmarks();
+    const id = _newsDetailCurrentId;
+    if (list.includes(id)) list = list.filter(x => x !== id);
+    else list.push(id);
+    localStorage.setItem('sisaNewsBookmarks_' + getUserSuffix(), JSON.stringify(list));
+    updateBookmarkBtnState(id);
+    if (typeof showToast === 'function') showToast(list.includes(id) ? 'Berita disimpan' : 'Berita dihapus dari simpanan', 'info');
+}
+function updateBookmarkBtnState(id) {
+    const btn = document.getElementById('newsDetailBookmarkBtn');
+    if (!btn) return;
+    const saved = isNewsBookmarked(id);
+    btn.classList.toggle('active', saved);
+    const svgPath = btn.querySelector('path');
+    if (svgPath) svgPath.setAttribute('fill', saved ? 'currentColor' : 'none');
+}
+
+// ============================================================
+// D5: CIRCULAR READING TIMER — 20 detik baca aktif = 20 koin.
+// Berjalan lintas-artikel (bukan per-artikel), pause otomatis saat
+// halaman Detail Berita tidak aktif/foreground, lanjut (bukan reset)
+// saat kembali.
+// ============================================================
+function getBonusKoin() {
+    try { return Number(localStorage.getItem('sisaBonusKoin_' + getUserSuffix()) || 0); } catch (e) { return 0; }
+}
+function addBonusKoin(amount) {
+    localStorage.setItem('sisaBonusKoin_' + getUserSuffix(), String(getBonusKoin() + amount));
+}
+function getReadingProgress() {
+    return Number(localStorage.getItem('sisaReadingProgress_' + getUserSuffix()) || 0);
+}
+function setReadingProgress(v) {
+    localStorage.setItem('sisaReadingProgress_' + getUserSuffix(), String(v));
+}
+function isNewsDetailPageActive() {
+    const el = document.getElementById('newsDetailPage');
+    return !!(el && el.classList.contains('active'));
+}
+const READING_TIMER_RADIUS = 16;
+const READING_TIMER_CIRC = 2 * Math.PI * READING_TIMER_RADIUS;
+function updateReadingTimerUI() {
+    const progress = getReadingProgress();
+    const ring = document.getElementById('newsReadingProgressCircle');
+    const countEl = document.getElementById('newsReadingCountValue');
+    if (!ring || !countEl) return;
+    const remaining = Math.max(20 - progress, 0);
+    const offset = READING_TIMER_CIRC * (1 - progress / 20);
+    ring.style.strokeDasharray = String(READING_TIMER_CIRC);
+    ring.style.strokeDashoffset = String(offset);
+    countEl.textContent = remaining + 's';
+}
+let _readingTimerInterval = null;
+function tickReadingTimer() {
+    // Pause diam-diam (progress tetap tersimpan) kalau bukan di halaman Detail Berita,
+    // atau tab/app sedang tidak aktif (background/minimize/screen off).
+    if (!isNewsDetailPageActive()) return;
+    if (document.visibilityState !== 'visible' || !document.hasFocus()) return;
+
+    let progress = getReadingProgress() + 1;
+    if (progress >= 20) {
+        addBonusKoin(20);
+        progress = 0;
+    }
+    setReadingProgress(progress);
+    updateReadingTimerUI();
+}
+function startReadingTimerLoop() {
+    if (_readingTimerInterval) return;
+    _readingTimerInterval = setInterval(tickReadingTimer, 1000);
+}
+
+// ============================================================
+// D1: HELPER REDESIGN — estimasi waktu baca & tags otomatis
+// ============================================================
+function estimateReadMinutes(text) {
+    const words = (text || '').trim().split(/\s+/).filter(Boolean).length;
+    return Math.max(1, Math.round(words / 200));
+}
+function getNewsTags(news) {
+    const kategori = (news.Kategori || 'Umum').replace(/\s+/g, '');
+    const tags = ['#' + kategori];
+    ['#SISAPlus', '#Lingkungan', '#PeduliSampah'].forEach(t => {
+        if (tags.length < 4 && !tags.includes(t)) tags.push(t);
+    });
+    return tags;
+}
+
+// ============================================================
+// D1/D2/D5: RENDER ISI HALAMAN DETAIL BERITA (redesign)
+// ============================================================
+function renderNewsDetailContent(news, id, opts) {
+    opts = opts || {};
+    const detailEl = document.getElementById('newsDetailContent');
+    if (!detailEl) return;
+
+    const totalViews = Number(news.Dibaca || news.Views || 0) + getLocalNewsViews(id);
+    const readMinutes = estimateReadMinutes(news.Isi);
+    const tags = getNewsTags(news);
+    const firstSentence = (news.Isi || '').split(/(?<=[.!?])\s+/)[0] || '';
+    const showQuote = firstSentence.length > 25 && firstSentence.length < 180;
+
+    detailEl.innerHTML = `
+        <span class="news-detail-badge">${escapeNewsHtml((news.Kategori || 'Umum').toUpperCase())}</span>
+        <h2 class="news-detail-title" style="font-size:21px;">${escapeNewsHtml(news.Judul || '')}</h2>
+
+        <div class="news-detail-meta-row">
+            <span>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                ${formatNewsDate(news.Timestamp)}
+            </span>
+            <span>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                ${readMinutes} menit baca
+            </span>
+            <span>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                ${totalViews}
+            </span>
+            <span class="news-detail-author">
+                <span class="news-detail-author-avatar">A</span>
+                Admin SISA+
+            </span>
+        </div>
+
+        <div class="news-reading-timer-wrap">
+            <div class="news-reading-timer-ring">
+                <svg width="40" height="40" viewBox="0 0 40 40">
+                    <circle class="bg" cx="20" cy="20" r="${READING_TIMER_RADIUS}"></circle>
+                    <circle class="progress" id="newsReadingProgressCircle" cx="20" cy="20" r="${READING_TIMER_RADIUS}"></circle>
+                </svg>
+                <div class="news-reading-timer-count" id="newsReadingCountValue">20s</div>
+            </div>
+            <div class="news-reading-timer-text">
+                Dapatkan 20 koin setiap 20 detik membaca
+                <small>Timer jeda otomatis kalau kamu pindah aplikasi</small>
+            </div>
+        </div>
+
+        ${news.GambarURL ? '<img src="' + news.GambarURL + '" class="news-detail-cover" onerror="this.style.display=\'none\'">' : ''}
+
+        <div class="news-detail-body" style="white-space:pre-wrap;">${escapeNewsHtml(news.Isi || '')}</div>
+
+        ${showQuote ? '<div class="news-detail-quote">' + escapeNewsHtml(firstSentence) + '</div>' : ''}
+
+        <div class="news-detail-tags">
+            ${tags.map(t => '<span class="news-detail-tag">' + t + '</span>').join('')}
+        </div>
+
+        <div class="news-detail-footer">
+            <button class="news-detail-share-btn" onclick="shareNewsArticle('${id}')">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"></line><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"></line></svg>
+                Bagikan Berita
+            </button>
+            <div class="news-detail-font-ctrl">
+                <button onclick="adjustNewsFontSize(-1)">A-</button>
+                <button onclick="adjustNewsFontSize(1)">A+</button>
+            </div>
+        </div>
+    `;
+
+    applyNewsFontSize();
+    updateReadingTimerUI();
+    updateBookmarkBtnState(id);
+}
+
+function shareNewsArticle(id) {
+    const shareData = { title: 'Berita SISA+', text: 'Baca berita ini di TerraLoop/SISA+', url: location.href };
+    if (navigator.share) {
+        navigator.share(shareData).catch(() => {});
+    } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareData.url);
+        if (typeof showToast === 'function') showToast('Link berita disalin', 'success');
+    }
+}
+
+// D1: kontrol ukuran font A-/A+ pada body artikel, disimpan sebagai preferensi
+function applyNewsFontSize() {
+    const size = Number(localStorage.getItem('sisaNewsFontSize') || 14);
+    const bodyEl = document.querySelector('#newsDetailContent .news-detail-body');
+    if (bodyEl) bodyEl.style.fontSize = size + 'px';
+}
+function adjustNewsFontSize(delta) {
+    let size = Number(localStorage.getItem('sisaNewsFontSize') || 14);
+    size = Math.min(20, Math.max(12, size + delta));
+    localStorage.setItem('sisaNewsFontSize', String(size));
+    applyNewsFontSize();
+}
+
+// ============================================================
+// D4: OPEN NEWS DETAIL — cache-first (instan) + anti "nyangkut".
+// Sebelumnya fungsi ini SELALU menunggu fetch server dulu baru render +
+// pindah halaman. Kalau fetch lambat, user yang sudah pindah ke menu lain
+// akan tiba-tiba "ditarik balik" ke Detail Berita begitu fetch selesai.
+// Sekarang: render instan dari cache yang sudah ada (biasanya sudah di-
+// prefetch saat awal), lalu refresh data di background TANPA memaksa
+// pindah halaman lagi kalau user sudah melakukan navigasi lain.
+// ============================================================
+let _newsDetailReqId = 0;
+let _newsDetailCurrentId = null;
+
 async function openNewsDetail(id) {
-    const list = await loadNewsFromServer();
-    const news = list.find(n => (n.NewsID || n.id) === id);
-    if (!news) {
-        alert('Berita tidak ditemukan');
+    const myReq = ++_newsDetailReqId;
+    _newsDetailCurrentId = id;
+    startReadingTimerLoop();
+
+    if (adminNewsCache === null) {
+        const cached = getNewsCache();
+        if (cached) adminNewsCache = cached;
+    }
+    let news = adminNewsCache ? adminNewsCache.find(n => (n.NewsID || n.id) === id) : null;
+
+    if (news) {
+        renderNewsDetailContent(news, id);
+        switchPage('newsDetailPage', null);
+        incrementNewsView(id);
+    }
+
+    const freshList = await loadNewsFromServer();
+    // Kalau sudah ada request lain (user buka berita lain / kembali membuka menu ini
+    // lagi) sebelum fetch ini selesai, hasil basi ini dibuang begitu saja.
+    if (myReq !== _newsDetailReqId) return;
+
+    const freshNews = freshList.find(n => (n.NewsID || n.id) === id);
+    if (!freshNews) {
+        if (!news) alert('Berita tidak ditemukan');
         return;
     }
 
-    const detailEl = document.getElementById('newsDetailContent');
-    if (detailEl) {
-        detailEl.innerHTML = `
-            ${news.GambarURL ? '<img src="' + news.GambarURL + '" style="width:100%;border-radius:12px;margin-bottom:16px;" onerror="this.style.display=\'none\'">' : ''}
-            <h2 style="font-size:20px;font-weight:800;color:#1e293b;margin-bottom:8px;">${escapeNewsHtml(news.Judul || '')}</h2>
-            <div style="font-size:13px;color:#94a3b8;margin-bottom:16px;">${formatNewsDate(news.Timestamp)}</div>
-            <div style="font-size:14px;color:#334155;line-height:1.7;white-space:pre-wrap;">${escapeNewsHtml(news.Isi || '')}</div>
-        `;
+    if (!news) {
+        // Tadi cache masih kosong sehingga belum sempat render sama sekali —
+        // baru sekarang render & pindah halaman.
+        renderNewsDetailContent(freshNews, id);
+        switchPage('newsDetailPage', null);
+        incrementNewsView(id);
+    } else {
+        // Sudah tampil instan dari cache — cukup perbarui kontennya diam-diam,
+        // TANPA memanggil switchPage lagi (supaya tidak "menyelonong" ke halaman lain).
+        renderNewsDetailContent(freshNews, id, { silentUpdate: true });
     }
-    switchPage('newsDetailPage', null);
 }
 // ============================================================
 // ADMIN — MANAJEMEN PRODUK
@@ -4412,7 +5016,7 @@ async function loadBannersToSimart() {
         if (!simartBannerCache) {
             track.innerHTML = '<div class="simart-banner-card">' +
                 '<div class="simart-banner-overlay">' +
-                    '<button class="simart-banner-btn" onclick="showApp(\'sipick\')">Belanja Sekarang</button>' +
+                    '<button class="simart-banner-btn" onclick="showApp()">Belanja Sekarang</button>' +
                 '</div>' +
             '</div>';
             dotsWrap.innerHTML = '';
@@ -4424,7 +5028,7 @@ function renderSimartBanners(banners, track, dotsWrap) {
     if (!banners.length) {
         track.innerHTML = '<div class="simart-banner-card">' +
             '<div class="simart-banner-overlay">' +
-                '<button class="simart-banner-btn" onclick="showApp(\'sipick\')">Belanja Sekarang</button>' +
+                '<button class="simart-banner-btn" onclick="showApp()">Belanja Sekarang</button>' +
             '</div>' +
         '</div>';
         dotsWrap.innerHTML = '';
@@ -4436,7 +5040,7 @@ function renderSimartBanners(banners, track, dotsWrap) {
             '<div class="simart-banner-overlay">' +
                 '<h3 class="simart-banner-title">' + (b.Judul || '') + '</h3>' +
                 '<p class="simart-banner-desc">' + (b.Subjudul || '') + '</p>' +
-                '<button class="simart-banner-btn" onclick="showApp(\'sipick\')">Belanja Sekarang</button>' +
+                '<button class="simart-banner-btn" onclick="showApp()">Belanja Sekarang</button>' +
             '</div>' +
         '</div>';
     }).join('');
@@ -4484,16 +5088,26 @@ async function submitBannerAdmin() {
     var id = document.getElementById('bannerFormId').value;
     var judul = document.getElementById('bannerFormJudul').value.trim();
     var subjudul = document.getElementById('bannerFormSubjudul').value.trim();
-    var gambar = document.getElementById('bannerFormGambar').value.trim();
 
-    if (!judul || !gambar) { alert('Judul dan gambar wajib diisi'); return; }
+    if (!judul) { alert('Judul wajib diisi'); return; }
     if (!id && adminBannersCache && adminBannersCache.length >= 4) {
         alert('Maksimal 4 banner aktif. Hapus salah satu dulu untuk menambah yang baru.');
         return;
     }
 
     var btn = document.getElementById('bannerSubmitBtn');
-    btn.disabled = true; btn.textContent = 'Menyimpan...';
+    btn.disabled = true; btn.textContent = 'Mengupload foto...';
+
+    var gambar;
+    try {
+        gambar = await uploadPendingImageIfAny('bannerFormGambar', judul);
+    } catch (err) {
+        alert('Gagal upload foto: ' + (err && err.message ? err.message : err));
+        btn.disabled = false; btn.textContent = id ? 'Simpan Perubahan' : '+ Tambah Banner';
+        return;
+    }
+    if (!gambar) { alert('Gambar wajib diisi'); btn.disabled = false; btn.textContent = id ? 'Simpan Perubahan' : '+ Tambah Banner'; return; }
+    btn.textContent = 'Menyimpan...';
 
     var payload = {
         type: id ? 'update_banner' : 'banner',
@@ -4510,7 +5124,7 @@ async function submitBannerAdmin() {
             body: new URLSearchParams(payload).toString()
         });
         resetBannerForm();
-        await loadBannersAdmin();
+        loadBannersAdmin(); // refresh tabel di belakang layar, tidak perlu ditunggu
     } catch (err) {
         alert('Gagal menyimpan banner: ' + err);
     } finally {
@@ -4527,6 +5141,13 @@ function editBannerAdmin(id) {
     document.getElementById('bannerFormSubjudul').value = b.Subjudul || '';
     document.getElementById('bannerFormGambar').value = b.GambarURL || '';
     document.getElementById('bannerSubmitBtn').textContent = 'Simpan Perubahan';
+    var bannerPreview = document.getElementById('bannerFormGambarPreview');
+    if (bannerPreview) {
+        if (b.GambarURL) { bannerPreview.src = b.GambarURL; bannerPreview.style.display = 'block'; }
+        else { bannerPreview.style.display = 'none'; bannerPreview.src = ''; }
+    }
+    var bannerFileInput = document.getElementById('bannerFormGambarFile');
+    if (bannerFileInput) bannerFileInput.value = '';
 }
 
 function resetBannerForm() {
@@ -4535,6 +5156,10 @@ function resetBannerForm() {
     document.getElementById('bannerFormSubjudul').value = '';
     document.getElementById('bannerFormGambar').value = '';
     document.getElementById('bannerSubmitBtn').textContent = '+ Tambah Banner';
+    var bannerPreview = document.getElementById('bannerFormGambarPreview');
+    if (bannerPreview) { bannerPreview.style.display = 'none'; bannerPreview.src = ''; }
+    var bannerFileInput = document.getElementById('bannerFormGambarFile');
+    if (bannerFileInput) bannerFileInput.value = '';
 }
 
 async function deleteBannerAdmin(id) {
@@ -4557,13 +5182,22 @@ async function submitProductAdmin() {
     var id       = document.getElementById('productFormId').value;
     var nama     = document.getElementById('productFormNama').value.trim();
     var harga    = document.getElementById('productFormHarga').value;
-    var gambar   = document.getElementById('productFormGambar').value.trim();
     var kategori = document.getElementById('productFormKategori').value;
 
     if (!nama || !harga) { alert('Nama dan harga wajib diisi'); return; }
 
     var btn = document.getElementById('productSubmitBtn');
-    btn.disabled = true; btn.textContent = 'Menyimpan...';
+    btn.disabled = true; btn.textContent = 'Mengupload foto...';
+
+    var gambar;
+    try {
+        gambar = await uploadPendingImageIfAny('productFormGambar', nama);
+    } catch (err) {
+        alert('Gagal upload foto: ' + (err && err.message ? err.message : err));
+        btn.disabled = false; btn.textContent = id ? 'Simpan Perubahan' : '+ Tambah Produk';
+        return;
+    }
+    btn.textContent = 'Menyimpan...';
 
     var payload = {
         type: id ? 'update_product' : 'product',
@@ -4580,10 +5214,10 @@ async function submitProductAdmin() {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams(payload).toString()
         });
-        resetProductForm();
+       resetProductForm();
         AdminCache.clear('products');
-        await loadProductsBackground();
         if (typeof showAdminToast === 'function') showAdminToast('✅ Produk tersimpan', 'success');
+        loadProductsBackground(); // refresh tabel di belakang layar, tidak perlu ditunggu
     } catch (err) {
         alert('Gagal menyimpan produk: ' + err);
     } finally {
@@ -4601,6 +5235,13 @@ function editProductAdmin(id) {
     document.getElementById('productFormGambar').value = p.GambarURL || '';
     document.getElementById('productFormKategori').value = p.Kategori || 'lainnya';
     document.getElementById('productSubmitBtn').textContent = 'Simpan Perubahan';
+    var productPreview = document.getElementById('productFormGambarPreview');
+    if (productPreview) {
+        if (p.GambarURL) { productPreview.src = p.GambarURL; productPreview.style.display = 'block'; }
+        else { productPreview.style.display = 'none'; productPreview.src = ''; }
+    }
+    var productFileInput = document.getElementById('productFormGambarFile');
+    if (productFileInput) productFileInput.value = '';
     document.getElementById('adminProducts').scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -4611,6 +5252,10 @@ function resetProductForm() {
     document.getElementById('productFormGambar').value = '';
     document.getElementById('productFormKategori').value = 'maggot';
     document.getElementById('productSubmitBtn').textContent = '+ Tambah Produk';
+    var productPreview = document.getElementById('productFormGambarPreview');
+    if (productPreview) { productPreview.style.display = 'none'; productPreview.src = ''; }
+    var productFileInput = document.getElementById('productFormGambarFile');
+    if (productFileInput) productFileInput.value = '';
 }
 
 async function deleteProductAdmin(id) {
@@ -4686,14 +5331,19 @@ function renderSimartProducts(products) {
         var gambar   = p.GambarURL || 'https://via.placeholder.com/300';
         var kategori = p.Kategori || 'lainnya';
         var hargaFmt = harga > 0 ? ('Rp' + harga.toLocaleString('id-ID')) : 'Hubungi untuk harga';
+        // C14: escape sebelum disisipkan ke innerHTML supaya nama produk yang
+        // mengandung tanda kutip/HTML tidak merusak markup.
+        var namaSafe   = escapeNewsHtml(nama);
+        var gambarSafe = escapeNewsHtml(gambar);
+        var kategoriSafe = escapeNewsHtml(kategori);
 
-       return '<div class="product-card" data-category="' + kategori + '">' +
+       return '<div class="product-card" data-category="' + kategoriSafe + '" data-name="' + namaSafe.toLowerCase() + '">' +
     '<div class="product-image">' +
-        '<img src="' + gambar + '" alt="' + nama + '" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+        '<img src="' + gambarSafe + '" alt="' + namaSafe + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">' +
     '</div>' +
     '<div class="product-info">' +
         '<div class="product-name-row">' +
-            '<div class="product-name">' + nama + '</div>' +
+            '<div class="product-name">' + namaSafe + '</div>' +
             '<button class="product-fav-btn" type="button" onclick="event.stopPropagation();this.classList.toggle(\'active\')">' +
                 '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s-7-4.5-9.5-9C0.7 8 2 4.5 5.5 4a5 5 0 0 1 6.5 2 5 5 0 0 1 6.5-2C22 4.5 23.3 8 21.5 12 19 16.5 12 21 12 21z"/></svg>' +
             '</button>' +
@@ -4713,6 +5363,30 @@ function filterSimartCategory(cat, btn) {
 
     document.querySelectorAll('#simartProductsGrid .product-card').forEach(card => {
         if (cat === 'all' || card.getAttribute('data-category') === cat) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+// ============================================================
+// BATCH2 #9: PENCARIAN PRODUK SIMART (search box di menu Toko)
+// ============================================================
+function filterSimartSearch(query) {
+    const q = (query || '').trim().toLowerCase();
+
+    // Kalau lagi ada pencarian aktif, reset dulu filter kategori ke "Semua"
+    // supaya hasil pencarian tidak ketimpa filter kategori yang aktif sebelumnya.
+    if (q) {
+        document.querySelectorAll('.simart-cat-btn').forEach(b => b.classList.remove('active'));
+        const allBtn = document.querySelector('.simart-cat-btn[onclick*="\'all\'"]');
+        if (allBtn) allBtn.classList.add('active');
+    }
+
+    document.querySelectorAll('#simartProductsGrid .product-card').forEach(card => {
+        const name = card.getAttribute('data-name') || '';
+        if (!q || name.indexOf(q) !== -1) {
             card.style.display = '';
         } else {
             card.style.display = 'none';
@@ -4786,14 +5460,8 @@ function filterSimartCategory(cat, btn) {
             saveNotifications(list);
         }
 
-function openPickField(id) {
-    const el = document.getElementById(id);
-    if (id === 'pickupDate' && el.showPicker) {
-        el.showPicker();
-    } else {
-        el.focus();
-    }
-}
+// C13: openPickField() versi native showPicker() sudah dihapus dari sini —
+// versi yang dipakai (custom modal openDatePicker()) ada di bawah.
 
 function updatePickLabel(inputId, labelId, defaultText, suffix) {
     const val = document.getElementById(inputId).value;
@@ -4990,9 +5658,14 @@ if ('serviceWorker' in navigator) {
     let completed = false;
 
     function setup() {
-        maxLeft = track.offsetWidth - handle.offsetWidth - 5;
+        const computed = track.offsetWidth - handle.offsetWidth - 5;
+        // Track masih display:none (offsetWidth=0) -> jangan pakai angka rusak,
+        // pertahankan nilai lama (biasanya di-recalc lagi begitu track terlihat,
+        // lihat pemanggilan setup() di onDown()).
+        if (computed > 0) maxLeft = computed;
     }
     window.addEventListener('resize', setup);
+    window._obSwipeRecalc = setup;
     setup();
 
     function pointerX(e) {
@@ -5002,13 +5675,15 @@ if ('serviceWorker' in navigator) {
     function onDown(e) {
         if (completed) return;
         setup(); // pastikan maxLeft akurat (mis. saat wrapper baru ditampilkan)
+        if (maxLeft <= 0) return; // track belum siap diukur, batalkan drag ini
         dragging = true;
         startX = pointerX(e) - handle.offsetLeft;
         handle.classList.add('ob-dragging');
+        track.classList.add('ob-dragging');
     }
 
     function onMove(e) {
-        if (!dragging) return;
+        if (!dragging || maxLeft <= 0) return;
         let newLeft = Math.min(Math.max(pointerX(e) - startX, 5), maxLeft);
         handle.style.left = newLeft + 'px';
         fill.style.width = (newLeft + handle.offsetWidth) + 'px';
@@ -5022,6 +5697,7 @@ if ('serviceWorker' in navigator) {
         if (!dragging) return;
         dragging = false;
         handle.classList.remove('ob-dragging');
+        track.classList.remove('ob-dragging');
         if (!completed) {
             handle.style.left = '5px';
             fill.style.width = handle.offsetWidth + 'px';
@@ -5033,6 +5709,7 @@ if ('serviceWorker' in navigator) {
         completed = true;
         dragging = false;
         handle.classList.remove('ob-dragging');
+        track.classList.remove('ob-dragging');
         handle.style.left = maxLeft + 'px';
         fill.style.width = '100%';
         track.classList.add('ob-completed');
@@ -5051,3 +5728,206 @@ if ('serviceWorker' in navigator) {
     window.addEventListener('mouseup', onUp);
     window.addEventListener('touchend', onUp);
 })();
+// ============================================================
+// FITUR BARU: UPLOAD FOTO LANGSUNG KE GOOGLE DRIVE
+// (menggantikan input "link foto" manual di form Produk/Banner/Berita)
+// Alur data ke Sheets TIDAK berubah — field hidden gambar tetap dikirim
+// persis seperti sebelumnya, cuma cara ngisinya sekarang otomatis via
+// upload, bukan diketik manual.
+// ============================================================
+var IMAGE_UPLOAD_MAX_MB = 5;
+
+function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function () {
+            var result = String(reader.result || '');
+            var base64 = result.indexOf(',') !== -1 ? result.split(',')[1] : result;
+            resolve(base64 || '');
+        };
+        reader.onerror = function () { reject(reader.error || new Error('Gagal membaca file')); };
+        reader.readAsDataURL(file);
+    });
+}
+
+function notifyUploadError(msg) {
+    if (typeof showToast === 'function') showToast(msg, 'error');
+    else if (typeof showAdminToast === 'function') showAdminToast(msg, 'error');
+    else alert(msg);
+}
+
+function notifyUploadSuccess(msg) {
+    if (typeof showToast === 'function') showToast(msg, 'success');
+    else if (typeof showAdminToast === 'function') showAdminToast(msg, 'success');
+}
+
+/**
+ * Pasang handler upload foto pada sebuah field.
+ * cfg: {
+ *   fileInputId:   id <input type=file>,
+ *   hiddenInputId: id <input type=hidden> yang isinya URL foto (dikirim ke Sheets),
+ *   previewImgId:  id <img> preview,
+ *   titleInputId:  id input judul/nama (dipakai backend untuk nama file),
+ *   submitBtnId:   id tombol submit form (didisable selama upload)
+ * }
+ */
+
+var pendingImageFiles = {}; // key: hiddenInputId -> File object yang belum diupload
+
+function setupImageUploadField(cfg) {
+    var fileInput = document.getElementById(cfg.fileInputId);
+    var hiddenInput = document.getElementById(cfg.hiddenInputId);
+    var previewImg = document.getElementById(cfg.previewImgId);
+    var dropzone = document.getElementById(cfg.hiddenInputId + 'Dropzone'.replace('Gambar', '')) || document.getElementById(cfg.fileInputId.replace('File', 'Dropzone'));
+    var placeholder = document.getElementById(cfg.fileInputId.replace('File', 'Placeholder'));
+    if (!fileInput || !hiddenInput) return;
+
+    function handleFile(file) {
+        if (!file) return;
+        if (!file.type || file.type.indexOf('image/') !== 0) {
+            notifyUploadError('File yang dipilih harus berupa gambar (jpg/png/webp/dll).');
+            return;
+        }
+        var sizeMb = file.size / (1024 * 1024);
+        if (sizeMb > IMAGE_UPLOAD_MAX_MB) {
+            notifyUploadError('Ukuran foto maksimal ' + IMAGE_UPLOAD_MAX_MB + 'MB (foto ini ' + sizeMb.toFixed(1) + 'MB).');
+            return;
+        }
+        if (previewImg) {
+            previewImg.src = URL.createObjectURL(file);
+            previewImg.style.display = 'block';
+        }
+        if (placeholder) placeholder.style.display = 'none';
+        pendingImageFiles[cfg.hiddenInputId] = file;
+        hiddenInput.value = '';
+    }
+
+    fileInput.addEventListener('change', function () {
+        var file = fileInput.files && fileInput.files[0];
+        handleFile(file);
+    });
+
+if (dropzone) {
+        var chooseBtn = dropzone.querySelector('.admin-photo-dropzone-btn');
+        var pasteCatcher = document.getElementById(cfg.fileInputId.replace('File', 'PasteCatcher'));
+
+        // Klik tombol "Pilih File" saja yang buka dialog sistem
+        if (chooseBtn) {
+            chooseBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                fileInput.click();
+            });
+        }
+
+        // Klik area kotak (di luar tombol) fokusin INPUT TAK TERLIHAT-nya,
+        // bukan div-nya sendiri — supaya event 'paste' pasti kedengeran browser.
+        dropzone.addEventListener('click', function (e) {
+            if (chooseBtn && (e.target === chooseBtn || chooseBtn.contains(e.target))) return;
+            if (pasteCatcher) pasteCatcher.focus();
+        });
+
+        dropzone.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+        dropzone.addEventListener('dragleave', function () {
+            dropzone.classList.remove('dragover');
+        });
+        dropzone.addEventListener('drop', function (e) {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+
+        if (pasteCatcher) {
+            pasteCatcher.addEventListener('paste', function (e) {
+                var items = e.clipboardData && e.clipboardData.items;
+                if (!items) return;
+                for (var i = 0; i < items.length; i++) {
+                    if (items[i].type && items[i].type.indexOf('image/') === 0) {
+                        var file = items[i].getAsFile();
+                        if (file) { handleFile(file); break; }
+                    }
+                }
+                pasteCatcher.value = ''; // buang teks kalau ada yg ikut ke-paste
+            });
+        }
+    }
+}
+
+var pendingImageFiles = {}; // key: id hidden input -> File yang belum diupload
+
+async function uploadPendingImageIfAny(hiddenInputId, titleValue) {
+    var file = pendingImageFiles[hiddenInputId];
+    var hiddenInput = document.getElementById(hiddenInputId);
+    if (!file) return hiddenInput ? hiddenInput.value : '';
+
+    var base64 = await fileToBase64(file);
+    var requestId = 'req-' + Date.now() + '-' + Math.floor(Math.random() * 9000 + 1000);
+
+    // FIX: langsung baca hasil dari response pertama (uploadnya sudah SELESAI
+    // di titik ini), jangan nunggu lagi lewat polling. Polling cuma dipakai
+    // sebagai CADANGAN kalau response pertama gagal dibaca (mis. koneksi putus).
+    try {
+        var uploadRes = await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                type: 'upload_image',
+                imageBase64: base64,
+                fileName: file.name || 'foto.jpg',
+                judul: titleValue || 'foto',
+                requestId: requestId
+            }).toString()
+        });
+        var uploadJson = await uploadRes.json();
+        if (uploadJson && uploadJson.success && uploadJson.url) {
+            delete pendingImageFiles[hiddenInputId];
+            return uploadJson.url;
+        }
+        if (uploadJson && uploadJson.success === false) {
+            throw new Error(uploadJson.error || 'Upload gagal');
+        }
+    } catch (e) {
+        console.warn('Response upload pertama gagal dibaca, coba polling sebagai cadangan:', e);
+    }
+
+    // Fallback: cuma dipakai kalau langkah di atas gagal total.
+    for (var i = 0; i < 20; i++) {
+        await new Promise(function (r) { setTimeout(r, 1500); });
+        var res = await fetch(APPS_SCRIPT_URL + '?type=get_upload_status&requestId=' + requestId + '&t=' + Date.now());
+        var json = await res.json();
+        if (json && json.pending === false) {
+            if (json.success && json.url) {
+                delete pendingImageFiles[hiddenInputId];
+                return json.url;
+            }
+            throw new Error(json.error || 'Upload gagal');
+        }
+    }
+    throw new Error('Timeout menunggu hasil upload');
+}
+document.addEventListener('DOMContentLoaded', function () {
+    setupImageUploadField({
+        fileInputId: 'productFormGambarFile',
+        hiddenInputId: 'productFormGambar',
+        previewImgId: 'productFormGambarPreview',
+        titleInputId: 'productFormNama',
+        submitBtnId: 'productSubmitBtn'
+    });
+    setupImageUploadField({
+        fileInputId: 'bannerFormGambarFile',
+        hiddenInputId: 'bannerFormGambar',
+        previewImgId: 'bannerFormGambarPreview',
+        titleInputId: 'bannerFormJudul',
+        submitBtnId: 'bannerSubmitBtn'
+    });
+    setupImageUploadField({
+        fileInputId: 'newsFormGambarFile',
+        hiddenInputId: 'newsFormGambar',
+        previewImgId: 'newsFormGambarPreview',
+        titleInputId: 'newsFormTitle',
+        submitBtnId: 'newsSubmitBtn'
+    });
+});
